@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework> 
+
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <WarnOn>3390;$(WarnOn)</WarnOn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="QP.fs" />
+    <Compile Include="NelderMead.fs" />
+    <Compile Include="SVD.fs" />
+    <Compile Include="TemporalClassification.fs" />
+    <None Include="Script.fsx" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FSharp.Stats" Version="0.4.0" />
+    <PackageReference Include="Microsoft.Solver.Foundation" Version="3.1.0" />
+  </ItemGroup>
+</Project>
