@@ -66,6 +66,7 @@ let data =
 
 let vecX = vector [1 .. 8]
 
+
 let res =
     [|0..10|]
     |> PSeq.withDegreeOfParallelism 16 //16
@@ -74,8 +75,15 @@ let res =
     |> PSeq.toArray
 
 [
-    Chart.Line([1. .. 0.01 .. 8.] |> List.map (fun x -> x,res.[0].SplineFunction x),Name="spline")
-    Chart.Point((data.[0] |> Array.mapi (fun i x -> x |> Array.map (fun s -> i+1,s)) |> Seq.concat),Name="raw")
+
+    [
+        Chart.Line([1. .. 0.01 .. 8.] |> List.map (fun x -> x,res.[0].SplineFunction x),Name="spline")
+        Chart.Point((data.[0] |> Array.mapi (fun i x -> x |> Array.map (fun s -> i+1,s)) |> Seq.concat),Name="raw")
+    ]
+    |> Chart.combine
+    Chart.Point(res.[0].GCVArray.Value,Name="GCV")
 ]
-|> Chart.combine
+|> Chart.Grid(2,1)
 |> Chart.show
+
+//todo replace gridsearch with bisection?

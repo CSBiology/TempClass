@@ -139,9 +139,12 @@ module TemporalClassification =
             ///AIC determined by SSE and the number of used extrema
             AICc     : float
             ///function, that returns the splines' value at a given x_value
-            SplineFunction  : (float -> float)}
+            SplineFunction  : (float -> float)
+            
+            GCVArray: (float*float)[] option
+            }
         
-        let createTempClassResult a c e gcv lambda ctemp aic splinefunction = {
+        let createTempClassResult a c e gcv lambda ctemp aic splinefunction gcvArray= {
             TraceA          = a
             TraceC          = c
             Error           = e
@@ -150,6 +153,7 @@ module TemporalClassification =
             Ctemp           = ctemp
             AICc            = aic
             SplineFunction  = splinefunction
+            GCVArray        = gcvArray
             } 
            
         type WeightingMethod =
@@ -721,7 +725,7 @@ module TemporalClassification =
             ///function that calculates the y_Value of the spline corresponding to the given x_Value
             let splineFunction = initEvalAt xVal a_unconstrained c
 
-            createTempClassResult a_unconstrained c 0. GCV_unconstrained 0. (Array2D.zeroCreate 0 0) aic splineFunction
+            createTempClassResult a_unconstrained c 0. GCV_unconstrained 0. (Array2D.zeroCreate 0 0) aic splineFunction None
         
         ///calculates an unconstrained smoothing spline for a given weightingmatrix, x-, and y-Values
         let getInitialEstimateOfWeighting W (y:Vector<float>) (xVal:Vector<float>) =
@@ -1137,35 +1141,35 @@ module TemporalClassification =
             
             let lamlist = [for i = 0 to 64 do yield 0.01*(1.2**(float i))]
             //let lamlist = [6.]//here attention
+            
+            let lambdaStrength = 
+                A
+                |> Array.map (fun aMat ->
+                    lamlist
+                    |> List.mapi (fun z lambd ->
+                        let Q = calcGlambda (Matrix.ofArray2D D) (Matrix.ofArray2D H) W n lambd //outsource (performance)
+                        let c = (calcclambda W n y lambd) |> RowVector.toArray                  //outsource (performance)
+                        //borders to solve the inequality constraints 
+                        let b = Array.create ((A.[0] |> Array2D.length1)) (-infinity,0.)
+                        //solver specific transformation (because symmetry of the matrix)
+                        let a' = 
+                            let tmp = Matrix.create Q.NumRows Q.NumCols 1. |> setDiagonalInplace 0.5
+                            let Q' = (Q .* tmp) |> Matrix.toArray2D
+                            QP.minimize aMat b Q' c |> Vector.ofArray
+                        let e' = getError y a' W
+                        //let c' =         
+                        //    let tmpH = Matrix.ofArray2D H
+                        //    let tmpD = Matrix.ofArray2D D
+                        //    let tmp = 
+                        //        let tmp' = Algebra.LinearAlgebra.SolveLinearSystems tmpD tmpH //tested
+                        //        tmp' * a'                                                     //tested
+                        //    Vector.init (tmp.Length+2) (fun i -> if i>0 && i<=tmp.Length then tmp.[i-1] else 0.0)
 
-            A
-            |> Array.map (fun aMat ->
-
-                lamlist
-                |> List.mapi (fun z lambd ->
-                    let Q = calcGlambda (Matrix.ofArray2D D) (Matrix.ofArray2D H) W n lambd //outsource (performance)
-                    let c = (calcclambda W n y lambd) |> RowVector.toArray                  //outsource (performance)
-                    //borders to solve the inequality constraints 
-                    let b = Array.create ((A.[0] |> Array2D.length1)) (-infinity,0.)
-                    //solver specific transformation (because symmetry of the matrix)
-                    let a' = 
-                        let tmp = Matrix.create Q.NumRows Q.NumCols 1. |> setDiagonalInplace 0.5
-                        let Q' = (Q .* tmp) |> Matrix.toArray2D
-                        QP.minimize aMat b Q' c |> Vector.ofArray
-                    let e' = getError y a' W
-                    //let c' =         
-                    //    let tmpH = Matrix.ofArray2D H
-                    //    let tmpD = Matrix.ofArray2D D
-                    //    let tmp = 
-                    //        let tmp' = Algebra.LinearAlgebra.SolveLinearSystems tmpD tmpH //tested
-                    //        tmp' * a'                                                     //tested
-                    //    Vector.init (tmp.Length+2) (fun i -> if i>0 && i<=tmp.Length then tmp.[i-1] else 0.0)
-
-                    let (mgcv,gcv) = getGCV (aMat |> Matrix.ofArray2D) (Matrix.ofArray2D D) (Matrix.ofArray2D H) W y.Length y a' lambd
-                    createInnerResult a' mgcv aMat e' gcv lambd
+                        let (mgcv,gcv) = getGCV (aMat |> Matrix.ofArray2D) (Matrix.ofArray2D D) (Matrix.ofArray2D H) W y.Length y a' lambd
+                        createInnerResult a' mgcv aMat e' gcv lambd
                         )
                 //minimize the gcv in respect to the used smoothing factor lambda
-                |> List.minBy (fun innerResult -> innerResult.GCV)
+                
                 )
                 //|> fun (a,e,gcvvar,c) -> 
                 //    let gcv = gcvvar |> Array.map fst
@@ -1185,27 +1189,34 @@ module TemporalClassification =
                 //    let lambdafin = 0.01*(1.2**(float gcvminIndex))
                 //    ((efin,gcvmin),(afin,varmin),lambdafin,cfin)
                 //        )
-            |> fun xt -> 
-                //additional case, when no spline satisfies the given conditions (with additional constraints that checks extrema count)
-                if xt = [||] then
-                    //for shape restriction if coefficient shrinkage is to intense (uncomment above)
-                    A,createTempClassResult (Vector.init n (fun _ -> 0.)) (Vector.init n (fun _ -> 0.)) infinity infinity infinity (Array2D.zeroCreate 1 1) infinity id
-                else 
-                    xt
-                    //among all shape possibilities under a given parent shape ((min, then max);(max);...) minimize the mGCV to obtain the most promising spline candidate
-                    |> Array.minBy (fun innerResult -> innerResult.GCV)
-                    |> fun result -> 
-                        let traceC = 
-                            let tmpH = Matrix.ofArray2D H
-                            let tmpD = Matrix.ofArray2D D
-                            let tmp = 
-                                let tmp' = Algebra.LinearAlgebra.SolveLinearSystems tmpD tmpH 
-                                tmp' * result.TraceA                                          
-                            Vector.init (tmp.Length+2) (fun i -> if i>0 && i<=tmp.Length then tmp.[i-1] else 0.0)
+            lambdaStrength
+            |> fun models -> 
+                let minimal = 
+                    models
+                    |> Array.map (List.minBy (fun innerResult -> innerResult.GCV))
+                minimal
+                |> fun xt -> 
+                    //additional case, when no spline satisfies the given conditions (with additional constraints that checks extrema count)
+                    if xt = [||] then
+                        //for shape restriction if coefficient shrinkage is to intense (uncomment above)
+                        A,createTempClassResult (Vector.init n (fun _ -> 0.)) (Vector.init n (fun _ -> 0.)) infinity infinity infinity (Array2D.zeroCreate 1 1) infinity id None
+                    else 
+                        xt
+                        //among all shape possibilities under a given parent shape ((min, then max);(max);...) minimize the mGCV to obtain the most promising spline candidate
+                        |> Array.indexed
+                        |> Array.minBy (fun (_,innerResult) -> innerResult.GCV)
+                        |> fun (resultindex,result) -> 
+                            let traceC = 
+                                let tmpH = Matrix.ofArray2D H
+                                let tmpD = Matrix.ofArray2D D
+                                let tmp = 
+                                    let tmp' = Algebra.LinearAlgebra.SolveLinearSystems tmpD tmpH 
+                                    tmp' * result.TraceA                                          
+                                Vector.init (tmp.Length+2) (fun i -> if i>0 && i<=tmp.Length then tmp.[i-1] else 0.0)
                 
-                        let aic = getAIC (float con) result.TraceA y W
-                        let splineFunction = initEvalAt x result.TraceA traceC
-                        A,createTempClassResult result.TraceA traceC result.Error result.GCV result.Lambda result.CTemp aic splineFunction
+                            let aic = getAIC (float con) result.TraceA y W
+                            let splineFunction = initEvalAt x result.TraceA traceC
+                            A,createTempClassResult result.TraceA traceC result.Error result.GCV result.Lambda result.CTemp aic splineFunction (Some (models.[resultindex] |> List.map (fun g -> g.Lambda,g.GCV)|> Array.ofList) )
             //|> fun (x,afinvar,lambdafin,c) -> ((x |> Array.unzip),afinvar,lambdafin,c)
             //|> fun tmp -> 
             //    let e =         tmp |> fun (a,b,c,d) -> fst a
@@ -1317,7 +1328,7 @@ module TemporalClassification =
                 let lambdafinal = lambdafin.[eminIndex]
                 let cfinal = cfin.[eminIndex]
                 let splineFunction = initEvalAt x afinal cfinal
-                createTempClassResult afinal cfinal gcvfinal efinal lambdafinal ctemp infinity splineFunction
+                createTempClassResult afinal cfinal gcvfinal efinal lambdafinal ctemp infinity splineFunction None
 
         ///calculates a constrained initially increasing spline with given y-,and y-Values, a weighting matrix and the number of allowed extrema
         let splineIncreasing (x:Vector<float>) (y:Vector<float>) (W:Matrix<float>) con = 
@@ -1367,7 +1378,7 @@ module TemporalClassification =
                 //selection of optimal shape possibility by model selection via AICc 
                 [bestfst;bestsnd;besttrd;bestqua;bestqui]
                 |> List.indexed 
-                |> List.minBy (fun (i,(cl,result)) -> 1.05**(float i) * result.AICc)
+                |> List.minBy (fun (i,(cl,result)) -> (*1.05**(float i) **) result.AICc)
                 |> fun (i,(cl,result)) -> if result.AICc < initialSelectionCriterion then (cl,result) else Complex,result        
             | Minimizer.GCV -> 
                 let initialSelectionCriterion = getinitialestimate.GCV             
@@ -1380,7 +1391,7 @@ module TemporalClassification =
                 //selection of optimal shape possibility by model selection via AICc 
                 [bestfst;bestsnd;besttrd;bestqua;bestqui]
                 |> List.indexed 
-                |> List.minBy (fun (i,(cl,result)) -> 1.05**(float i) * result.GCV)
+                |> List.minBy (fun (i,(cl,result)) -> (*1.05**(float i) **) result.GCV)
                 |> fun (i,(cl,result)) -> if result.GCV < initialSelectionCriterion then (cl,result) else Complex,result             
 
         [<Obsolete("Only applicable at equal x spacing. Use initEvalAt instead")>]
