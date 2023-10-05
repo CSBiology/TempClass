@@ -1374,12 +1374,19 @@ module TemporalClassification =
                 let besttrd = [trd1;trd2] |> List.minBy (fun (cl,x) -> x.AICc)
                 let bestqua = [qua1;qua2] |> List.minBy (fun (cl,x) -> x.AICc)                                                               
                 let bestqui = [qui1;qui2] |> List.minBy (fun (cl,x) -> x.AICc)
-
+                let models = 
+                    let extract ((c,r) : (Condition*TempClassResult)) = 
+                        c.ToString(),r.AICc
+                    [|("unconstrained",initialSelectionCriterion);extract fst1;extract fst2;extract snd1;extract snd2;extract trd1;extract trd2;extract qua1;extract qua2;extract qui1;extract qui2|]
+            
                 //selection of optimal shape possibility by model selection via AICc 
                 [bestfst;bestsnd;besttrd;bestqua;bestqui]
                 |> List.indexed 
                 |> List.minBy (fun (i,(cl,result)) -> (*1.05**(float i) **) result.AICc)
-                |> fun (i,(cl,result)) -> if result.AICc < initialSelectionCriterion then (cl,result) else Complex,result        
+                |> fun (i,(cl,result)) -> 
+                    if result.AICc < initialSelectionCriterion then 
+                        (cl,result,models) 
+                    else Complex,result,models
             | Minimizer.GCV -> 
                 let initialSelectionCriterion = getinitialestimate.GCV             
                 let bestfst = [fst1;fst2] |> List.minBy (fun (cl,x) -> x.GCV)                                                                
@@ -1387,12 +1394,18 @@ module TemporalClassification =
                 let besttrd = [trd1;trd2] |> List.minBy (fun (cl,x) -> x.GCV)
                 let bestqua = [qua1;qua2] |> List.minBy (fun (cl,x) -> x.GCV)                                                               
                 let bestqui = [qui1;qui2] |> List.minBy (fun (cl,x) -> x.GCV)
-
+                let models = 
+                    let extract ((c,r) : (Condition*TempClassResult)) = 
+                        c.ToString(),r.GCV
+                    [|("unconstrained",initialSelectionCriterion);extract fst1;extract fst2;extract snd1;extract snd2;extract trd1;extract trd2;extract qua1;extract qua2;extract qui1;extract qui2|]
                 //selection of optimal shape possibility by model selection via AICc 
                 [bestfst;bestsnd;besttrd;bestqua;bestqui]
                 |> List.indexed 
-                |> List.minBy (fun (i,(cl,result)) -> (*1.05**(float i) **) result.GCV)
-                |> fun (i,(cl,result)) -> if result.GCV < initialSelectionCriterion then (cl,result) else Complex,result             
+                |> List.minBy (fun (i,(cl,result)) -> result.GCV)
+                |> fun (i,(cl,result)) -> 
+                    if result.GCV < initialSelectionCriterion then 
+                        (cl,result,models) 
+                    else Complex,result,models          
 
         [<Obsolete("Only applicable at equal x spacing. Use initEvalAt instead")>]
         //same as initEvalAt, but with recalculated polynomial coefficients
@@ -1465,8 +1478,9 @@ module TemporalClassification =
         let getBestFit xVal (yVal: float [][]) weightingMethod minimizer = 
             let yValMeans = yVal |> Seq.map Seq.mean |> vector
             let weightingMatrix = (getWeighting xVal yVal weightingMethod)
-            let (cl,fit) = getBestFitOfWeighting xVal yValMeans weightingMatrix minimizer
-            fit
+            let (cl,fit,models) = getBestFitOfWeighting xVal yValMeans weightingMatrix minimizer
+            fit,models
+
 
         ///gets the observation values (x,y), and the replicates standard deviation and weightingmethod and returns the spline result of the best fit
         let getBestFitOfStd (xVal:Vector<float>) (yVal:Vector<float>) (stdVal:Vector<float>) weightingMethod minimizer= 
@@ -1490,8 +1504,8 @@ module TemporalClassification =
                         w |> Vector.map (fun e -> e / mean)
                     | _ -> failwithf "not implemented yet"
                 Matrix.init xVal.Length xVal.Length (fun i j -> if i=j then weigths.[i] else 0.)
-            let (cl,fit) = getBestFitOfWeighting xVal yVal weightingMatrix minimizer
-            fit
+            let (cl,fit,models) = getBestFitOfWeighting xVal yVal weightingMatrix minimizer
+            fit,models
 
         ///helper function for initWithLinearInterpol
         let private leftSegmentIdx arr value = 

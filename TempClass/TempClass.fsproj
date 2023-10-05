@@ -12,6 +12,7 @@
     <Compile Include="SVD.fs" />
     <Compile Include="TemporalClassification.fs" />
     <None Include="Script.fsx" />
+    <None Include="TC.fsx" />
   </ItemGroup>
 
   <ItemGroup>
