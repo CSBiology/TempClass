@@ -384,7 +384,6 @@ printfn "All AIC Combinations Ready!!"
 //printfn "All GCV Combinations Ready!!"
 
 
-//hier srarten, ergebnisse im arc
 
 
 let showClassOccupance (input: Characterization []) aggregateSimple title descr savePath =
@@ -425,7 +424,99 @@ let showClassOccupance (input: Characterization []) aggregateSimple title descr 
 showClassOccupance resstdevAic   false "resstdevAic"    "Minimizer: AICc<br>Weighting: std"   @"C:\Users\bvenn\source\repos\TemporalClassification\runs\Testing\HS40\AIC\std\ClassHistogram.html"
 
 
+let aicstd =  
+    System.IO.File.ReadAllLines(@"C:\Users\bvenn\source\repos\TemporalClassification\runs\Testing\HS40\AIC\std\result.tsv")
+    |> Array.tail
+    |> Array.map (fun x -> 
+        let tmp = x.Split '\t'
+        tmp.[42]
+        )
 
+aicstd
+|> Array.groupBy (fun x -> 
+    if x.StartsWith("D") then "D" elif x.StartsWith "I" then "I" else x
+    )
+|> Array.sortByDescending (snd >> Seq.length)
+|> Array.map (fun (x,i) -> x.Replace(".00",""),i.Length)
+|> Chart.Column
+|> Chart.withSize (750.,600.)
+|> Chart.withTemplate ChartTemplates.lightMirrored
+|> Chart.withXAxisStyle (Title=Title.init(Text="classes",Font=Font.init(FontFamily.Arial,16)),ShowGrid=false)
+|> Chart.withMargin(Margin.init(Bottom= 300.))
+|> Chart.withYAxisStyle (Title=Title.init(Text="count",Font=Font.init(FontFamily.Arial,16)),ShowGrid=false)
+|> Chart.withConfig Chart.svgConfig
+|> Chart.withTitle (Title.init "class occupancy")
+|> Chart.withLayoutStyle(Font=(Font.init(Family=FontFamily.Arial,Size=16))) 
+|> Chart.show
+
+aicstd
+|> Array.filter (fun x -> x.StartsWith "D" || x.StartsWith "I")
+|> Array.groupBy (fun x -> x)
+|> Array.sortByDescending (snd >> Seq.length)
+|> Array.map (fun (x,i) -> x.Replace(".00",""),i.Length)
+|> Chart.Column
+|> Chart.withSize (750.,600.)
+|> Chart.withTemplate ChartTemplates.lightMirrored
+|> Chart.withXAxisStyle (Title=Title.init(Text="classes",Font=Font.init(FontFamily.Arial,16)),ShowGrid=false)
+|> Chart.withMargin(Margin.init(Bottom= 300.))
+|> Chart.withYAxisStyle (Title=Title.init(Text="count",Font=Font.init(FontFamily.Arial,16)),ShowGrid=false)
+|> Chart.withConfig Chart.svgConfig
+|> Chart.withTitle (Title.init "class occupancy")
+|> Chart.withLayoutStyle(Font=(Font.init(Family=FontFamily.Arial,Size=16))) 
+|> Chart.show
+
+let extremaClassCount1 = 
+    aicstd
+    |> Array.filter (fun x -> not (x.StartsWith "D" || x.StartsWith "I" || x.StartsWith "constant"))
+    |> Array.filter (fun x -> (x.Split ",") |> Array.length = 1)
+    |> Array.distinct
+    |> Array.length
+
+let extremaClassCount2 = 
+    aicstd
+    |> Array.filter (fun x -> not (x.StartsWith "D" || x.StartsWith "I"))
+    |> Array.filter (fun x -> (x.Split ",") |> Array.length = 2)
+    |> Array.distinct
+    |> Array.length
+
+let extremaClassCount3 = 
+    aicstd
+    |> Array.filter (fun x -> not (x.StartsWith "D" || x.StartsWith "I" || x.StartsWith "constant"))
+    |> Array.filter (fun x -> (x.Split ",") |> Array.length = 3)
+    |> Array.distinct
+    |> Array.length
+
+let extremaClassCount4 = 
+    aicstd
+    |> Array.filter (fun x -> not (x.StartsWith "D" || x.StartsWith "I" || x.StartsWith "constant"))
+    |> Array.filter (fun x -> (x.Split ",") |> Array.length = 4)
+    |> Array.distinct
+    |> Array.length
+
+[
+    Chart.StackedColumn(
+        [
+        "0 extrema",3
+        "1 extrema",extremaClassCount1
+        "2 extrema",extremaClassCount2
+        "3 extrema",extremaClassCount3
+        "4 extrema",extremaClassCount4
+        ],Name="occupied classes",MarkerColor = Color.fromString "orange",MultiText = ["3/3";"14/16";"38/56";"47/112";"1/140"])
+    Chart.StackedColumn(
+        [
+        "0 extrema",0
+        "1 extrema",16-extremaClassCount1
+        "2 extrema",56-extremaClassCount2
+        "3 extrema",112-extremaClassCount3
+        "4 extrema",140-extremaClassCount4
+        ],Name="unoccupied classes",MarkerColor = Color.fromString "blue")
+]
+|> Chart.combine
+|> Chart.withAxisTitles "" "shape classes"
+|> Chart.withLegendStyle(Orientation=Orientation.Horizontal)
+|> Chart.withSize (750.,600.)
+|> Chart.withLayoutStyle(Font=(Font.init(Family=FontFamily.Arial,Size=16))) 
+|> Chart.show
 
 // make word file
 // import histograms
@@ -1467,7 +1558,7 @@ printfn "All combintations GCV of singleRepDeletion ready!"
 //////testTimePoint 
 let remove4TP =
     data
-    |> Array.take 100
+    |> Array.take 10
     |> PSeq.mapi (fun i (id,values) -> 
         if i%100=0 then printfn "%i/%i" i data.Length
         let timepoints = vector [0.;1.;2.;3.;4.;5.;6.;7.]
@@ -1512,17 +1603,17 @@ let remove4TP =
     let difTC = Math.Abs ((remFit.SplineFunction 4.) - (origFit.SplineFunction 4.))
 
     [
-        Chart.Point((origx |> Array.map (fun x -> x + 1.)),origy,MarkerColor =Color.fromString"red") |> Chart.withMarkerStyle(Size=5,Color=Color.fromString "red")
-        Chart.Line((orFit|> Seq.map (fun (x,y) -> x + 1.,y)),LineColor =Color.fromString"blue") |> Chart.withTraceInfo "origTC"
-        [0. .. 0.1 .. 7.] |> List.map (fun x -> x + 1.,origlinSpline x) |> fun t -> Chart.Line (t,LineColor =Color.fromString"blue",Name="linSpl")
-        [0. .. 0.1 .. 7.] |> List.map (fun x -> x + 1.,origcubic x) |> fun t -> Chart.Line (t,LineColor =Color.fromString"blue",Name="cubic")
-        [0. .. 0.1 .. 7.] |> List.map (fun x -> x + 1.,origpolyInt x) |> fun t -> Chart.Line (t,LineColor =Color.fromString"blue",Name="poly")
+        Chart.Point((origx |> Array.map (fun x -> x + 1.)),origy,MarkerColor =Color.fromString "red") |> Chart.withMarkerStyle(Size=5,Color=Color.fromString "red")
+        Chart.Line((orFit|> Seq.map (fun (x,y) -> x + 1.,y)),LineColor =Color.fromString "#1f77b4") |> Chart.withTraceInfo "origTC"
+        [0. .. 0.1 .. 7.] |> List.map (fun x -> x + 1.,origlinSpline x) |> fun t -> Chart.Line (t,LineColor =Color.fromString "#1f77b4",Name="linSpl")
+        [0. .. 0.1 .. 7.] |> List.map (fun x -> x + 1.,origcubic x) |> fun t -> Chart.Line (t,LineColor =Color.fromString "#1f77b4",Name="cubic")
+        [0. .. 0.1 .. 7.] |> List.map (fun x -> x + 1.,origpolyInt x) |> fun t -> Chart.Line (t,LineColor =Color.fromString "#1f77b4",Name="poly")
 
         Chart.Point((remx |> Array.map (fun x -> x + 1.)),remy,MarkerColor =Color.fromString"black") |> Chart.withMarkerStyle(Size=5,Color=Color.fromString "black")
-        Chart.Line((reFit|> Seq.map (fun (x,y) -> x + 1.,y)),LineColor =Color.fromString"green") |> Chart.withTraceInfo "remTC"
-        [0. .. 0.1 .. 7.] |> List.map (fun x -> x + 1.,remlinSpline x) |> fun t -> Chart.Line (t,LineColor =Color.fromString"green",Name="linSpl")
-        [0. .. 0.1 .. 7.] |> List.map (fun x -> x + 1.,remcubic x) |> fun t -> Chart.Line (t,LineColor =Color.fromString"green",Name="cubic")
-        [0. .. 0.1 .. 7.] |> List.map (fun x -> x + 1.,rempolyInt x) |> fun t -> Chart.Line (t,LineColor =Color.fromString"green",Name="poly")
+        Chart.Line((reFit|> Seq.map (fun (x,y) -> x + 1.,y)),LineColor =Color.fromString "#ff7f0e") |> Chart.withTraceInfo "remTC"
+        [0. .. 0.1 .. 7.] |> List.map (fun x -> x + 1.,remlinSpline x) |> fun t -> Chart.Line (t,LineColor =Color.fromString "#ff7f0e",Name="linSpl")
+        [0. .. 0.1 .. 7.] |> List.map (fun x -> x + 1.,remcubic x) |> fun t -> Chart.Line (t,LineColor =Color.fromString "#ff7f0e",Name="cubic")
+        [0. .. 0.1 .. 7.] |> List.map (fun x -> x + 1.,rempolyInt x) |> fun t -> Chart.Line (t,LineColor =Color.fromString "#ff7f0e",Name="poly")
         
 
     ]
@@ -1537,6 +1628,76 @@ let remove4TP =
     |> Chart.withTitle (string i )
     |> Chart.withLayoutStyle(Font=(Font.init(Family=FontFamily.Arial,Size=14)))
     |> Chart.withSize(500.,500)
+    |> Chart.show
+    )
+
+
+
+[|remove4TP.[7]|]
+|> Array.mapi (fun i ((orig,origFit),(rem,remFit)) -> 
+    let origx,origy = orig |> Array.mapi (fun i x -> x |> Array.map (fun k -> float i,k)) |> Array.concat |> Array.unzip
+    let oMx,oMy = orig |> Array.mapi (fun i x -> float i,Seq.mean x) |> Array.unzip
+    let orFit = [0. .. 0.1 .. 7.] |> List.map (fun x -> x,origFit.SplineFunction x) 
+
+    let origlinSpline = Interpolation.LinearSpline.interpolate (Interpolation.LinearSpline.initInterpolate oMx oMy)
+    let origcubic = Interpolation.CubicSpline.Simple.fit (Interpolation.CubicSpline.Simple.coefficients Interpolation.CubicSpline.Simple.BoundaryCondition.Natural (vector oMx) (vector oMy)) (vector oMx)
+    let origpolyInt = Interpolation.Polynomial.fit (Interpolation.Polynomial.coefficients (vector oMx) (vector oMy))
+
+    let t = [0;1;2;3;5;6;7]
+    let remx,remy  = rem |> Array.mapi (fun i x -> x |> Array.map (fun k->  float t.[i],k)) |> Array.concat |> Array.unzip
+    let rMx,rMy  = rem |> Array.mapi (fun i x -> float t.[i],Seq.mean x) |> Array.unzip
+    let reFit = [0. .. 0.1 .. 7.] |> List.map (fun x -> x,remFit.SplineFunction x)
+    
+    let remlinSpline = Interpolation.LinearSpline.interpolate (Interpolation.LinearSpline.initInterpolate rMx rMy) 
+    let remcubic = Interpolation.CubicSpline.Simple.fit (Interpolation.CubicSpline.Simple.coefficients Interpolation.CubicSpline.Simple.BoundaryCondition.Natural (vector rMx) (vector rMy)) (vector rMx)
+    let rempolyInt = Interpolation.Polynomial.fit (Interpolation.Polynomial.coefficients (vector rMx) (vector rMy))
+
+    let difSpline = Math.Abs (remlinSpline 4. - origlinSpline 4.)
+    let difLinear = Math.Abs (remcubic  4. - origcubic 4.)
+    let difPoly = Math.Abs (rempolyInt  4. - origpolyInt 4.)
+    let difTC = Math.Abs ((remFit.SplineFunction 4.) - (origFit.SplineFunction 4.))
+    
+    let chartTC =
+        [
+            Chart.Point((origx |> Array.map (fun x -> x + 1.)),origy,MarkerColor =Color.fromString "red") |> Chart.withMarkerStyle(Size=5,Color=Color.fromString "red")
+            Chart.Point((remx |> Array.map (fun x -> x + 1.)),remy,MarkerColor =Color.fromString"black") |> Chart.withMarkerStyle(Size=5,Color=Color.fromString "black")
+            Chart.Line((orFit|> Seq.map (fun (x,y) -> x + 1.,y)),LineColor =Color.fromString "#1f77b4") |> Chart.withTraceInfo "origTC"
+            Chart.Line((reFit|> Seq.map (fun (x,y) -> x + 1.,y)),LineColor =Color.fromString "#ff7f0e") |> Chart.withTraceInfo "remTC"
+        ] |> Chart.combine |> Chart.withAxisTitles "" ""
+        
+    let chartLS =
+        [
+            Chart.Point((origx |> Array.map (fun x -> x + 1.)),origy,MarkerColor =Color.fromString "red") |> Chart.withMarkerStyle(Size=5,Color=Color.fromString "red")
+            Chart.Point((remx |> Array.map (fun x -> x + 1.)),remy,MarkerColor =Color.fromString"black") |> Chart.withMarkerStyle(Size=5,Color=Color.fromString "black")
+            [0. .. 0.1 .. 7.] |> List.map (fun x -> x + 1.,origlinSpline x) |> fun t -> Chart.Line (t,LineColor =Color.fromString "#1f77b4",Name="linSpl")
+            [0. .. 0.1 .. 7.] |> List.map (fun x -> x + 1.,remlinSpline x) |> fun t -> Chart.Line (t,LineColor =Color.fromString "#ff7f0e",Name="linSpl")
+        ] |> Chart.combine |> Chart.withAxisTitles "" ""
+        
+    let chartCS =
+        [
+            Chart.Point((origx |> Array.map (fun x -> x + 1.)),origy,MarkerColor =Color.fromString "red") |> Chart.withMarkerStyle(Size=5,Color=Color.fromString "red")
+            Chart.Point((remx |> Array.map (fun x -> x + 1.)),remy,MarkerColor =Color.fromString"black") |> Chart.withMarkerStyle(Size=5,Color=Color.fromString "black")
+            [0. .. 0.1 .. 7.] |> List.map (fun x -> x + 1.,origcubic x) |> fun t -> Chart.Line (t,LineColor =Color.fromString "#1f77b4",Name="cubic")
+            [0. .. 0.1 .. 7.] |> List.map (fun x -> x + 1.,remcubic x) |> fun t -> Chart.Line (t,LineColor =Color.fromString "#ff7f0e",Name="cubic")
+        ] |> Chart.combine |> Chart.withAxisTitles "" ""
+        
+    let chartPO =
+        [
+            Chart.Point((origx |> Array.map (fun x -> x + 1.)),origy,MarkerColor =Color.fromString "red") |> Chart.withMarkerStyle(Size=5,Color=Color.fromString "red")
+            Chart.Point((remx |> Array.map (fun x -> x + 1.)),remy,MarkerColor =Color.fromString"black") |> Chart.withMarkerStyle(Size=5,Color=Color.fromString "black")
+            [0. .. 0.1 .. 7.] |> List.map (fun x -> x + 1.,origpolyInt x) |> fun t -> Chart.Line (t,LineColor =Color.fromString "#1f77b4",Name="poly")
+            [0. .. 0.1 .. 7.] |> List.map (fun x -> x + 1.,rempolyInt x) |> fun t -> Chart.Line (t,LineColor =Color.fromString "#ff7f0e",Name="poly")
+        ] |> Chart.combine |> Chart.withAxisTitles "" ""
+
+    [
+        chartTC |> Chart.withXAxis(LinearAxis.init(ShowTickLabels=false))
+        chartPO |> Chart.withYAxis(LinearAxis.init(ShowTickLabels=false)) |> Chart.withXAxis(LinearAxis.init(ShowTickLabels=false))
+        chartLS
+        chartCS |> Chart.withYAxis(LinearAxis.init(ShowTickLabels=false))
+    ]
+    |> Chart.Grid(2,2,YGap=(0.0),XGap=(0.0))
+    |> Chart.withLayoutStyle(Font=(Font.init(Family=FontFamily.Arial,Size=14)))
+    |> Chart.withSize(700.,500)
     |> Chart.show
     )
 
