@@ -5,22 +5,16 @@ This enables a more precise representation of the measured information and impro
 identify biologically interpretable correlations among the data. 
 
 
-Usage:
+##Usage:
 
 ```fsharp
-#r "FSharp.Stats.dll"
 #r "TempClass.dll"
 #r "nuget: FSharp.Collections.ParallelSeq, 1.2.0"
-#r "nuget: Plotly.NET, 4.2.0"
 
 open Plotly.NET
-open FSharp.Stats
-open FSharp.Collections.ParallelSeq
 open TempClass
 open TempClass.TemporalClassification
 open Plotly.NET
-open Plotly.NET.StyleParam
-open Plotly.NET.LayoutObjects
 
 FSharp.Stats.ServiceLocator.setEnvironmentPathVariable (@"\..\TempClass\lib")
 FSharp.Stats.Algebra.LinearAlgebra.Service()
@@ -70,4 +64,6 @@ visualizationSpline
 
 ```
 
+## Charting result
 
+![example result](docs/img/docuExample.png)
