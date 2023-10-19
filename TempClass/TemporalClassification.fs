@@ -122,8 +122,36 @@ module TemporalClassification =
             | De3     //3 minima
             | De4     //4 minima
             | Complex //more complex
+                       
+        type WeightingMethod =
+            /// weight: 1
+            | Equal
+            /// weight: minmax((1/stDev),Wmin)
+            | VarRobust//Variance
+            /// 1/var centered around 1
+            | Variance//Variance
+            /// 1/var not centered
+            | VarPlain
+            /// max 0. (log(1./|Seq.cvPopulation g|),2.))
+            | CV
+            /// weight: (1/stDev)
+            | StandardDeviation
+            /// weight: sqrt(1/stDev)
+            | StandardDeviationSqrt
+            /// weight: sqrt(1/(stDev/mean))
+            | StandardDeviationAdj
+            /// weight: sqrt(sqrt(1/(stDev/mean)))
+            | StandardDeviationAdjSqrt
+            
+        type Minimizer = 
+            | GCV
+            | AICc
 
         type TempClassResult = {
+            XValues : vector option
+            YValues : float [][] option
+            WeightingMethod : WeightingMethod option
+            Minimizer : Minimizer option
             ///spline function values at knots
             TraceA   : vector
             ///spline second derivative values at knots
@@ -144,7 +172,11 @@ module TemporalClassification =
             GCVArray: (float*float)[] option
             }
         
-        let createTempClassResult a c e gcv lambda ctemp aic splinefunction gcvArray= {
+        let createTempClassResult x y w m a c e gcv lambda ctemp aic splinefunction gcvArray= {
+            XValues         = x
+            YValues         = y
+            WeightingMethod = w
+            Minimizer       = m
             TraceA          = a
             TraceC          = c
             Error           = e
@@ -155,26 +187,6 @@ module TemporalClassification =
             SplineFunction  = splinefunction
             GCVArray        = gcvArray
             } 
-           
-        type WeightingMethod =
-            /// weight: 1
-            | Equal
-            /// weight: minmax((1/stDev),Wmin)
-            | VarRobust//Variance
-            /// 1/var centered around 1
-            | Variance//Variance
-            /// 1/var not centered
-            | VarPlain
-            /// max 0. (log(1./|Seq.cvPopulation g|),2.))
-            | CV
-            /// weight: (1/stDev)
-            | StandardDeviation
-            /// weight: sqrt(1/stDev)
-            | StandardDeviationSqrt
-            /// weight: sqrt(1/(stDev/mean))
-            | StandardDeviationAdj
-            /// weight: sqrt(sqrt(1/(stDev/mean)))
-            | StandardDeviationAdjSqrt
 
         //record type for easy handling inside the shape classification process
         type InnerResult = {
@@ -725,7 +737,7 @@ module TemporalClassification =
             ///function that calculates the y_Value of the spline corresponding to the given x_Value
             let splineFunction = initEvalAt xVal a_unconstrained c
 
-            createTempClassResult a_unconstrained c 0. GCV_unconstrained 0. (Array2D.zeroCreate 0 0) aic splineFunction None
+            createTempClassResult (Some xVal) None None None a_unconstrained c 0. GCV_unconstrained 0. (Array2D.zeroCreate 0 0) aic splineFunction None
         
         ///calculates an unconstrained smoothing spline for a given weightingmatrix, x-, and y-Values
         let getInitialEstimateOfWeighting W (y:Vector<float>) (xVal:Vector<float>) =
@@ -1199,7 +1211,7 @@ module TemporalClassification =
                     //additional case, when no spline satisfies the given conditions (with additional constraints that checks extrema count)
                     if xt = [||] then
                         //for shape restriction if coefficient shrinkage is to intense (uncomment above)
-                        A,createTempClassResult (Vector.init n (fun _ -> 0.)) (Vector.init n (fun _ -> 0.)) infinity infinity infinity (Array2D.zeroCreate 1 1) infinity id None
+                        A,createTempClassResult None None None None (Vector.init n (fun _ -> 0.)) (Vector.init n (fun _ -> 0.)) infinity infinity infinity (Array2D.zeroCreate 1 1) infinity id None
                     else 
                         xt
                         //among all shape possibilities under a given parent shape ((min, then max);(max);...) minimize the mGCV to obtain the most promising spline candidate
@@ -1216,7 +1228,7 @@ module TemporalClassification =
                 
                             let aic = getAIC (float con) result.TraceA y W
                             let splineFunction = initEvalAt x result.TraceA traceC
-                            A,createTempClassResult result.TraceA traceC result.Error result.GCV result.Lambda result.CTemp aic splineFunction (Some (models.[resultindex] |> List.map (fun g -> g.Lambda,g.GCV)|> Array.ofList) )
+                            A,createTempClassResult None None None None result.TraceA traceC result.Error result.GCV result.Lambda result.CTemp aic splineFunction (Some (models.[resultindex] |> List.map (fun g -> g.Lambda,g.GCV)|> Array.ofList) )
             //|> fun (x,afinvar,lambdafin,c) -> ((x |> Array.unzip),afinvar,lambdafin,c)
             //|> fun tmp -> 
             //    let e =         tmp |> fun (a,b,c,d) -> fst a
@@ -1328,7 +1340,7 @@ module TemporalClassification =
                 let lambdafinal = lambdafin.[eminIndex]
                 let cfinal = cfin.[eminIndex]
                 let splineFunction = initEvalAt x afinal cfinal
-                createTempClassResult afinal cfinal gcvfinal efinal lambdafinal ctemp infinity splineFunction None
+                createTempClassResult (Some x) None None None  afinal cfinal gcvfinal efinal lambdafinal ctemp infinity splineFunction None
 
         ///calculates a constrained initially increasing spline with given y-,and y-Values, a weighting matrix and the number of allowed extrema
         let splineIncreasing (x:Vector<float>) (y:Vector<float>) (W:Matrix<float>) con = 
@@ -1338,9 +1350,6 @@ module TemporalClassification =
         let splineDecreasing (x:Vector<float>) (y:Vector<float>) (W:Matrix<float>) con = 
             spline (~+) x y W con
 
-        type Minimizer = 
-            | GCV
-            | AICc
 
         ///returns the best fit of the observation x,-and y-values and a given weightingMatrix
         let getBestFitOfWeighting x_values y_values wMat minimizer = 
@@ -1479,7 +1488,7 @@ module TemporalClassification =
             let yValMeans = yVal |> Seq.map Seq.mean |> vector
             let weightingMatrix = (getWeighting xVal yVal weightingMethod)
             let (cl,fit,models) = getBestFitOfWeighting xVal yValMeans weightingMatrix minimizer
-            fit,models
+            {fit with XValues = Some xVal;YValues = Some yVal;WeightingMethod = Some weightingMethod;Minimizer = Some minimizer},models
 
 
         ///gets the observation values (x,y), and the replicates standard deviation and weightingmethod and returns the spline result of the best fit
@@ -1688,3 +1697,85 @@ module TemporalClassification =
                     |> List.map (fun ex -> {ex with Xvalue = Aux.roundToNext ex.Xvalue xValues})
                     |> Fitting.extremaToString
                 
+    module Vis =
+        open Plotly.NET
+        open Plotly.NET.StyleParam
+        open Plotly.NET.LayoutObjects
+
+        let getChart (tc: Fitting.TempClassResult) (modelQualityScores: ((string*float)[]) option) = 
+            let min,max =
+                Seq.min tc.XValues.Value,
+                Seq.max tc.XValues.Value
+                
+            let transformClassNames str =
+                match str with 
+                | "unconstrained" -> "unconstrained"
+                | "In0" -> "monotonically increasing"
+                | "De0" -> "monotonically decreasing"
+                | "In1" -> "1 maximum"
+                | "De1" -> "1 minimum"
+                | "In2" -> "max + min"
+                | "De2" -> "min + max"
+                | "In3" -> "max + min + max"
+                | "De3" -> "min + max + min"
+                | "In4" -> "max + min + max + min"
+                | "De4" -> "min + max + min + max"
+                | _ -> "misc"
+
+            let classification = Classification.getClassification tc.XValues.Value tc.TraceA tc.TraceC 0.05 1.
+
+            let visualizationSpline = 
+                [min .. 0.05 .. max]
+                |> List.map (fun x -> 
+                    x,tc.SplineFunction x
+                    )
+                |> Chart.Line
+                |> Chart.withTraceInfo "constrained spline"
+
+            let visualizationRawSignal = 
+                tc.YValues.Value 
+                |> Array.mapi (fun i x -> 
+                    x |> Array.map (fun a -> tc.XValues.Value.[i],a)
+                    )
+                |> Array.concat
+                |> Chart.Point
+                |> Chart.withTraceInfo "raw signal"
+
+            let signalChart =
+                [
+                    visualizationRawSignal
+                    visualizationSpline
+                ]
+                |> Chart.combine
+                |> Chart.withXAxisStyle "time point" 
+                |> Chart.withYAxisStyle "intensity"
+
+            let qualityParameter = 
+                if modelQualityScores.IsSome then 
+                    let columnvalues = 
+                        modelQualityScores.Value
+                        |> Array.map (fun (a,b) -> transformClassNames a, b)
+                    
+                    Chart.Column(columnvalues,MarkerColor=Color.fromString "grey",Name="qc") |> Chart.withXAxisStyle "" |> Chart.withYAxisStyle "quality score"
+                else Chart.Invisible()
+
+            let weightingChart = 
+                let weightings = 
+                    Fitting.getWeighting tc.XValues.Value tc.YValues.Value tc.WeightingMethod.Value
+                    |> Matrix.getDiag
+                    |> Vector.toArray
+                    |> Array.zip (Vector.toArray tc.XValues.Value)
+                Chart.Column(weightings,Name = "point weightings")
+                |> Chart.withXAxisStyle "time point" 
+                |> Chart.withYAxisStyle "weighting"
+
+            [signalChart;weightingChart;qualityParameter]
+            |> Chart.Grid(3,1)
+            |> Chart.withTemplate ChartTemplates.lightMirrored
+            |> Chart.withTitle classification
+            |> Chart.withSize(600.,900.)
+            |> Chart.withMarginSize(Bottom=200)
+
+
+
+

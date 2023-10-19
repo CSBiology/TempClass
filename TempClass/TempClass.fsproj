@@ -18,6 +18,7 @@
   <ItemGroup>
     <PackageReference Include="FSharp.Stats" Version="0.4.0" />
     <PackageReference Include="Microsoft.Solver.Foundation" Version="3.1.0" />
+    <PackageReference Include="Plotly.NET" Version="4.2.0" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="../../lib/*.dll" PackagePath="netlib_LAPACK"></Content>

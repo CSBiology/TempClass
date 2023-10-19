@@ -26,6 +26,59 @@ open Plotly.NET
 open Plotly.NET.StyleParam
 open Plotly.NET.LayoutObjects
 
+
+
+
+
+
+
+
+// time points with spacing according to kinetic expectation
+let timepoints = vector [|1.;2.;3.;4.;5.;6.;7.;8.|]
+
+// three replicates where measured at each of the 8 time points
+let intensitiesProteinA = 
+    [|
+        [|17.74781999; 17.60999355; 17.3816851|];
+        [|17.44109769; 17.42662059; 17.98721015|];
+        [|17.79075992; 17.6181864; 17.66741748|];
+        [|17.53004396; 18.35447924; 17.84085591|];
+        [|17.90062327; 17.65002708; 17.60924143|];
+        [|17.77776007; 17.80117604; 17.55941645|];
+        [|17.1401598; 17.73320743; 17.93044716|];
+        [|18.43547806; 18.23607406; 17.99477221|]
+    |]
+
+// Time point weighting method
+let weighting = Fitting.WeightingMethod.StandardDeviation
+
+// Minimization criterion for the final model selection. Shapebased optimization is carried out using mGCV
+let minimizer = Fitting.Minimizer.AICc
+
+// smoothing spline result
+let (result,modelQualityScores) = Fitting.getBestFit timepoints intensitiesProteinA weighting minimizer
+
+// used smoothing strength
+let lambda = result.Lambda //226.44802
+
+
+// classification decription of the signal. If the intensities do not exceed a range of 0.05, they are classified as constant signals
+// alternatively, ANOVA filtering can be applied
+let classification = Classification.getClassification timepoints result.TraceA result.TraceC 0.05 1.
+
+// function that takes a x vale and returns the predicted y value of the constrained smoothing spline
+let splineFunction : float -> float = result.SplineFunction
+
+let visualizationSpline = 
+    TemporalClassification.Vis.getChart result (Some modelQualityScores)
+
+visualizationSpline
+|> Chart.show
+
+
+
+
+
 //some axis styling
 module Chart = 
     let myAxis name = 
@@ -122,6 +175,13 @@ let data =
         let emptyTP = signal |> Seq.chunkBySize 3 |> Seq.map Seq.mean |> Seq.tryFind (fun k -> k = 0.) |> fun t -> t.IsNone
         zeroamount && emptyTP //&& anova
         )
+
+let plotI i =
+    let tc,models = (TemporalClassification.Fitting.getBestFit timepoints (snd data.[i] |> Array.chunkBySize 3) Fitting.WeightingMethod.StandardDeviation Fitting.Minimizer.AICc)
+    TemporalClassification.Vis.getChart tc (Some models)
+
+
+(snd data.[7] |> Array.chunkBySize 3)
 
 type Characterization = {
     ID : string
@@ -497,24 +557,24 @@ let extremaClassCount4 =
     Chart.StackedColumn(
         [
         "0 extrema",3
-        "1 extrema",extremaClassCount1
-        "2 extrema",extremaClassCount2
-        "3 extrema",extremaClassCount3
-        "4 extrema",extremaClassCount4
+        "1 extrema",14//extremaClassCount1
+        "2 extrema",38//extremaClassCount2
+        "3 extrema",47//extremaClassCount3
+        "4 extrema",1//extremaClassCount4
         ],Name="occupied classes",MarkerColor = Color.fromString "orange",MultiText = ["3/3";"14/16";"38/56";"47/112";"1/140"])
     Chart.StackedColumn(
         [
         "0 extrema",0
-        "1 extrema",16-extremaClassCount1
-        "2 extrema",56-extremaClassCount2
-        "3 extrema",112-extremaClassCount3
-        "4 extrema",140-extremaClassCount4
-        ],Name="unoccupied classes",MarkerColor = Color.fromString "blue")
+        "1 extrema",16-14//extremaClassCount1
+        "2 extrema",56-38//extremaClassCount2
+        "3 extrema",112-47//extremaClassCount3
+        "4 extrema",140-1//extremaClassCount4
+        ],Name="unoccupied classes",MarkerColor = Color.fromString "#1f77b4")
 ]
 |> Chart.combine
 |> Chart.withAxisTitles "" "shape classes"
 |> Chart.withLegendStyle(Orientation=Orientation.Horizontal)
-|> Chart.withSize (750.,600.)
+|> Chart.withSize (750.,400.)
 |> Chart.withLayoutStyle(Font=(Font.init(Family=FontFamily.Arial,Size=16))) 
 |> Chart.show
 
