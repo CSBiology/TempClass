@@ -1,3 +1,5 @@
+## Temporal classification
+
 Temporal classification is an approach conceptually based on a classical time series analysis, where the dependency of the consecutive time points is exploited. 
 Constrained smoothing splines with automated model selection separates between signal and noise under the assumption that high frequent changes are less likely 
 to occur, simultaneously preserving information about the detected variance. 
@@ -5,12 +7,15 @@ This enables a more precise representation of the measured information and impro
 identify biologically interpretable correlations among the data. 
 
 
-##Usage:
+## Usage:
 
 ```fsharp
 #r "TempClass.dll"
+#r "FSharp.Stats.dll"
+#r "nuget: Plotly.NET, 4.2.0"
 #r "nuget: FSharp.Collections.ParallelSeq, 1.2.0"
 
+open FSharp.Stats
 open Plotly.NET
 open TempClass
 open TempClass.TemporalClassification

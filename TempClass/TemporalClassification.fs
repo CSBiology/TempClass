@@ -1774,6 +1774,7 @@ module TemporalClassification =
             |> Chart.withTemplate ChartTemplates.lightMirrored
             |> Chart.withTitle classification
             |> Chart.withSize(600.,900.)
+            |> Chart.withConfig(Config.init (ToImageButtonOptions = ConfigObjects.ToImageButtonOptions.init(Format = StyleParam.ImageFormat.SVG)))
             |> Chart.withMarginSize(Bottom=200)
 
 
