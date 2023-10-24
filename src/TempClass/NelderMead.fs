@@ -43,13 +43,11 @@ module NelderMead =
                 
             new System.Func<INonlinearModel, int, ValuesByIndex, bool, float> (eval) 
 
-
         solver.FunctionEvaluator <- diffFunc
         
         solver.Solve(solverParams) |> ignore
         
         variables |> Array.map (fun v -> solver.GetValue(v).ToDouble() )
-    
 
     let minimizeWith (f: float[] -> float) (init:float[]) (lower:float[]) (upper:float[])  =
         
@@ -89,14 +87,11 @@ module NelderMead =
                 
             new System.Func<INonlinearModel, int, ValuesByIndex, bool, float> (eval) 
 
-
         solver.FunctionEvaluator <- diffFunc
         
         solver.Solve(solverParams) |> ignore
         
         variables |> Array.map (fun v -> solver.GetValue(v).ToDouble() )
-        
-
 
     let minimizeSingleWith (f: float -> float) (init:float) (lower:float) (upper:float)  =
         
@@ -124,15 +119,11 @@ module NelderMead =
                 
             new System.Func<INonlinearModel, int, ValuesByIndex, bool, float> (eval) 
 
-
         solver.FunctionEvaluator <- diffFunc
         
         solver.Solve(solverParams) |> ignore
         
         solver.GetValue(variableIndex).ToDouble()
-
-
-
 
 //let rosenbrockFunction (values:float []) (gradient:float []) = 
 //    gradient.[0] <- -2. * (1. - values.[0]) - 400. * values.[0] * (values.[1] - (values.[0] * values.[0])) 
@@ -143,7 +134,3 @@ module NelderMead =
 //
 //QuasiNewton.minimize rosenbrockFunction ([|0.;0.|])
    
-
-
-
-

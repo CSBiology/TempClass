@@ -6,16 +6,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="playground.fsx" />
     <Compile Include="QP.fs" />
     <Compile Include="NelderMead.fs" />
     <Compile Include="SVD.fs" />
     <Compile Include="TemporalClassification.fs" />
     <None Include="Script.fsx" />
-    <None Include="TC.fsx" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="FSharp.Stats" Version="0.4.0" />
+    <PackageReference Include="FSharp.Stats" Version="0.4.6" />
     <PackageReference Include="Microsoft.Solver.Foundation" Version="3.1.0" />
     <PackageReference Include="Plotly.NET" Version="4.2.0" />
   </ItemGroup>

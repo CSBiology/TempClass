@@ -71,7 +71,9 @@ visualizationSpline
 
 ## Charting result
 
-![example result](docs/img/docuExample.png)
+<center>
+<img src="docs/img/docuExample.png" alt="example result" width="60%"/>
+</center>
 
 ## References
 

@@ -1,7 +1,7 @@
 ﻿#time "on"
  
-#r @"C:\Users\bvenn\source\repos\TempClass\TempClass\bin\Debug\net472\FSharp.Stats.dll"
-#r @"C:\Users\bvenn\source\repos\TempClass\TempClass\bin\Debug\net472\TempClass.dll"
+#r @"C:\Users\bvenn\source\repos\TempClass\src\TempClass\bin\Release\net472\FSharp.Stats.dll"
+#r @"C:\Users\bvenn\source\repos\TempClass\src\TempClass\bin\Release\net472\TempClass.dll"
 #r "nuget: FSharp.Collections.ParallelSeq, 1.2.0"
 #r "nuget: Plotly.NET, 4.2.0"
 
@@ -148,6 +148,23 @@ let plot i sens =
     |> Chart.show
 
 
+plot 00 1.
+plot 01 1.
+plot 02 1.
+plot 03 1.
+plot 04 1.
+plot 05 1.
+plot 06 1.
+plot 07 1.
+plot 08 1.
+plot 09 1.
+plot 10 1.
+
+let (test,models) = Fitting.getBestFit timepoints (snd data.[10] |> Array.chunkBySize 3) Fitting.WeightingMethod.StandardDeviation Fitting.Minimizer.AICc
+test.Ctemp
+|> JaggedArray.ofArray2D
+|> Chart.Heatmap
+|> Chart.show
 
 let proc (id,signal:float[]) weighting minimizer =
     let ys = signal
@@ -243,7 +260,7 @@ let proc (id,signal:float[]) weighting minimizer =
 
 (proc data.[0] Fitting.WeightingMethod.StandardDeviation Fitting.Minimizer.GCV).Chart |> Chart.show
 
-    
+
 let resVarAic = 
     data.[0..15]
     |> PSeq.withDegreeOfParallelism 12

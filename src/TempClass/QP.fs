@@ -12,9 +12,6 @@ module QP =
         solver.SetBounds(variable, Rational.op_Implicit xlo, Rational.op_Implicit xhi)
         variable
 
-
-
-
     let private addGoal (solver:InteriorPointSolver) (minimize:bool) (coefficients:int[]) (c:float[]) (Q:float[,]) =
         let (_,goal) = solver.AddRow("Goal")
         solver.AddGoal(goal, 0, minimize) |> ignore
@@ -25,10 +22,7 @@ module QP =
         for i=0 to dim-1 do 
             for ii=i to dim-1 do
                 solver.SetCoefficient(goal, Rational.op_Implicit(Q.[ii,i]), coefficients.[i], coefficients.[ii])
-                //printfn "%f" Q.[ii,i]
-
         goal
-
 
     let private addconstraintsWithBounds (solver:InteriorPointSolver) (coefficients:int[]) (A:float[,]) (b:array<float*float>) =
         let constraints =
@@ -62,7 +56,6 @@ module QP =
         
         variables |> Array.map (fun v -> solution.GetValue(v).ToDouble())
 
-
     let minimize (A:float[,]) (b:array<float*float>) (Q:float[,]) (c:float[]) =
         let x = Array.init c.Length (fun _ -> (-infinity,infinity) )
         minimizeWith A b Q c x
@@ -82,12 +75,9 @@ module QP =
         
         variables |> Array.map (fun v -> solution.GetValue(v).ToDouble())
 
-
     let maximize (A:float[,]) (b:array<float*float>) (Q:float[,]) (c:float[]) =
         let x = Array.init c.Length (fun _ -> (-infinity,infinity) )
         maximizeWith A b Q c x
-
-
 
 //// Q = [1  0       Term: x^2
 ////     -2  1]      Term: -2xy + y^2
@@ -106,8 +96,3 @@ module QP =
 //let c' = [|0.;-5.; 3.;|]
 //
 //QP.minimize A' b' Q c'
-   
-
-
-
-
