@@ -27,9 +27,6 @@ open Plotly.NET.LayoutObjects
 1+1
 
 
-
-
-
 //some axis styling
 module Chart = 
     let myAxis name = 

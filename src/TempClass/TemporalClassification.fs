@@ -12,26 +12,64 @@ module TemporalClassification =
     open FSharp.Stats.Optimization
 
     module Aux =
-        let unzip4 li =
-            let length = Seq.length li
+
+        /// <summary>Takes a collection of quadrupels and sorts them in to four individual arrays</summary>
+        /// <param name="input">collection of values to be separated</param>
+        /// <returns>A tuple ('a [] * 'b [] * 'c [] * 'd [])</returns>
+        /// <example> 
+        /// <code> 
+        /// 
+        /// let xData = [|(1,"a",1.,'a');(2,"b",2.,'b');(3,"c",3.,'c');|]
+        /// 
+        /// unzip4 xData
+        /// </code> 
+        /// </example>
+        let unzip4 input =
+            let length = Seq.length input
             let la = Array.zeroCreate length
             let lb = Array.zeroCreate length
             let lc = Array.zeroCreate length
             let ld = Array.zeroCreate length
-            li |> Seq.iteri (fun i (a,b,c,d) ->   
+            input 
+            |> Seq.iteri (fun i (a,b,c,d) ->   
                 (la.[i] <- a)
                 (lb.[i] <- b)
                 (lc.[i] <- c)
                 (ld.[i] <- d)
-                    )
+                )
             (la,lb,lc,ld)
-     
+
+        /// <summary>Takes a collection of quadrupels and sorts them in to four individual arrays</summary>
+        /// <param name="xVal">a single x value that should be rounded to the neighboring value within xVals</param>
+        /// <param name="xVals">collection of x values</param>
+        /// <returns>The nearest x value</returns>
+        /// <example> 
+        /// <code> 
+        /// 
+        /// let xData = [1.;2.;5.;6.;]
+        /// 
+        /// roundToNext  3.4 xData
+        /// // returns 5.
+        /// </code> 
+        /// </example>
         let roundToNext (xVal:float) (xVals:seq<float>) =
             xVals 
             |> Seq.minBy (fun xI -> Math.Abs (xI - xVal))
 
-        ///gets indices of minima and maxima by brute force search
-        let private investigateTrace pct (arr:float[]) =
+        /// <summary>Gets indices of minima and maxima by brute force search.</summary>
+        /// <param name="pct">Allowed percentage deviation (+/-) for a value to be considered as equal</param>
+        /// <param name="arr">collection of values to investigate</param>
+        /// <returns>Lists of minima indices and maxima indices.</returns>
+        /// <example> 
+        /// <code> 
+        /// 
+        /// let xData = [|1.;2.;5.;3.;|]
+        /// 
+        /// investigateTrace 0.025 xData
+        /// // returns [],[2], indicating a maximum at index 2 
+        /// </code> 
+        /// </example>
+        let investigateTrace pct (arr: float[]) =
             let almostEqual (pct:float) f1 f2 =
                 let (min,max) = f2 - Math.Abs(f2 * pct),f2 + Math.Abs(f2 * pct)
                 f1 >= min && f1 <= max
@@ -86,14 +124,16 @@ module TemporalClassification =
     module Fitting =
         
         type Extremum = {
-            ///1:Maximum; -1:Minimum
+            /// 1:Maximum; -1:Minimum
             Indicator : int
-            ///xValue of extremum
+            /// xValue of extremum
             Xvalue    : float
-            }
+            } with
+                static member Create indicator xValue = {Indicator = indicator; Xvalue = xValue}
 
-        let createExtremum indicator xValue = {Indicator = indicator; Xvalue = xValue}
-
+        /// <summary>Converts a collection of `Extremum` to a String in the form of Min2.00,Max1.00.</summary>
+        /// <param name="extrema">Extrema to be converted</param>
+        /// <returns>A single string describing the extrema configuration</returns>
         let extremaToString (extrema: Extremum list) =
             let indicatorToString ind =
                 if ind = 1 then "Max" else "Min"
@@ -101,19 +141,32 @@ module TemporalClassification =
             |> List.map (fun x -> sprintf "%s%.2f" (indicatorToString x.Indicator) x.Xvalue)
             |> String.concat ","
 
+        /// <summary>Parent shape descriptor (e.g. In2 for 2 extrema starting increasing (max,min))</summary>
         type Condition =
-            | In0     //monotonically increasing
-            | In1     //1 maximum
-            | In2     //2 maxima
-            | In3     //3 maxima
-            | In4     //4 maxima
-            | De0     //monotonically decreasing
-            | De1     //1 minimum
-            | De2     //2 minima
-            | De3     //3 minima
-            | De4     //4 minima
+            /// monotonically increasing
+            | In0
+            /// 1 maximum
+            | In1
+            /// maximum, then minimum
+            | In2
+            /// maximum, then minimum, then maximum
+            | In3
+            /// maximum, then minimum, then maximum, then minimum
+            | In4
+            /// monotonically decreasing
+            | De0
+            /// 1 minimum
+            | De1
+            /// minimum, then maximum
+            | De2
+            /// minimum, then maximum, then minimum
+            | De3
+            /// minimum, then maximum, then minimum, then maximum
+            | De4
+            /// contains more than 4 extrema
             | Complex //more complex
                        
+        /// <summary>Parent shape descriptor (e.g. In2 for 2 extrema starting increasing (max,min))</summary>
         type WeightingMethod =
             /// weight: 1
             | Equal
@@ -134,10 +187,14 @@ module TemporalClassification =
             /// weight: sqrt(sqrt(1/(stDev/mean)))
             | StandardDeviationAdjSqrt
             
+        /// <summary>Parent shape descriptor (e.g. In2 for 2 extrema starting increasing (max,min))</summary>
         type Minimizer = 
+            /// modified generalized cross validation (rho 1.3)
             | GCV
+            /// Akaike information criterion corrected for small sample sizes
             | AICc
 
+        ///
         type TempClassResult = {
             XValues : vector option
             YValues : float [][] option
@@ -178,24 +235,38 @@ module TemporalClassification =
                     GCVArray        = gcvArray
                     } 
 
-        //record type for easy handling inside the shape classification process
+        /// record type for easy handling inside the shape classification process
         type InnerResult = {
             TraceA  : Vector<float>
             GCV     : float
             Var     : float
             Error   : float
             CTemp   : float [,]
-            Lambda  : float}
+            Lambda  : float
+            } with
+                static member Create a g c e v l = {
+                    TraceA  = a
+                    GCV     = g
+                    Var     = v
+                    Error   = e
+                    CTemp   = c
+                    Lambda  = l}    
 
-        let internal createInnerResult a g c e v l = {
-            TraceA  = a
-            GCV     = g
-            Var     = v
-            Error   = e
-            CTemp   = c
-            Lambda  = l}    
-            
-        /// gives smoothing spline function
+
+        /// <summary>Takes x values, y values and curvature of function at x values and returns a function that maps x values to its corresponding y value.</summary>
+        /// <param name="x">vector of x values</param>
+        /// <param name="a">vector of y values at the position of the x values</param>
+        /// <param name="c">vector of curvature (second derivative) at the position of the x values</param>
+        /// <returns>gives smoothing spline function</returns>
+        /// <example> 
+        /// <code> 
+        /// 
+        /// let func = initEvalAt (vector [1.;2.;3.;4.]) (vector [1.;2.;3.;2.]) (vector [0.1;0.02;0.11;0.2])
+        /// 
+        /// func 1.3
+        /// // returns the position of the defined spline at position 1.3
+        /// </code> 
+        /// </example>
         let initEvalAt (x:Vector<float>) (a:Vector<float>) (c:Vector<float>) =
             let n = x.Length
 
@@ -229,7 +300,20 @@ module TemporalClassification =
                 evalAt i t
                 )
 
-        /// fst derivative at amplitudes a and curvatures c with x values x
+        /// <summary>Takes x values, y values and curvature of function at x values and returns a function that maps x values to its corresponding y value slope.</summary>
+        /// <param name="x">vector of x values</param>
+        /// <param name="a">vector of y values at the position of the x values</param>
+        /// <param name="c">vector of curvature (second derivative) at the position of the x values</param>
+        /// <returns>gives function of function slope</returns>
+        /// <example> 
+        /// <code> 
+        /// 
+        /// let func = initEvalFstDerivativeAt (vector [1.;2.;3.;4.]) (vector [1.;2.;3.;2.]) (vector [0.1;0.02;0.11;0.2])
+        /// 
+        /// func 1.3
+        /// // returns the slope of the defined spline at position 1.3
+        /// </code> 
+        /// </example>
         let initEvalFstDerivativeAt (x:Vector<float>) (a:Vector<float>) (c:Vector<float>) =
             let n = x.Length
 
@@ -264,7 +348,20 @@ module TemporalClassification =
                 evalAt i t
                 )
 
-        /// second derivative at amplitudes a and curvatures c with x values x
+        /// <summary>Takes x values, y values and curvature of function at x values and returns a function that maps x values to its corresponding y value curvature.</summary>
+        /// <param name="x">vector of x values</param>
+        /// <param name="a">vector of y values at the position of the x values</param>
+        /// <param name="c">vector of curvature (second derivative) at the position of the x values</param>
+        /// <returns>gives function of function curvature</returns>
+        /// <example> 
+        /// <code> 
+        /// 
+        /// let func = initEvalSndDerivativeAt (vector [1.;2.;3.;4.]) (vector [1.;2.;3.;2.]) (vector [0.1;0.02;0.11;0.2])
+        /// 
+        /// func 1.3
+        /// // returns the curvature of the defined spline at position 1.3
+        /// </code> 
+        /// </example>
         let initEvalSndDerivativeAt (x:Vector<float>) (a:Vector<float>) (c:Vector<float>) =
             let n = x.Length
 
@@ -291,7 +388,20 @@ module TemporalClassification =
                 evalAt i t
                 )
 
-        /// trd derivative at amplitudes a and curvatures c with x values x  
+        /// <summary>Takes x values, y values and curvature of function at x values and returns a function that maps x values to its corresponding third derivative.</summary>
+        /// <param name="x">vector of x values</param>
+        /// <param name="a">vector of y values at the position of the x values</param>
+        /// <param name="c">vector of curvature (second derivative) at the position of the x values</param>
+        /// <returns>gives function of third derivative</returns>
+        /// <example> 
+        /// <code> 
+        /// 
+        /// let func = initEvalTrdDerivativeAt (vector [1.;2.;3.;4.]) (vector [1.;2.;3.;2.]) (vector [0.1;0.02;0.11;0.2])
+        /// 
+        /// func 1.3
+        /// // returns third derivative of the defined spline at position 1.3
+        /// </code> 
+        /// </example>
         let initEvalTrdDerivativeAt (x:Vector<float>) (a:Vector<float>) (c:Vector<float>) =
             let n = x.Length
 
@@ -311,6 +421,10 @@ module TemporalClassification =
                     | None   -> failwith "The x-value is not part of the section used to estimate the spline coefficients, thus a monotone function progression can not be guaranteed"
                 evalAt i t
                 )
+
+
+
+
 
         /// calculates extrema present in the given smoothing spline
         let getExtrema (x:Vector<float>) (a:Vector<float>) (c:Vector<float>) =
@@ -365,11 +479,11 @@ module TemporalClassification =
                                         let yAtX = splineFunction xAtS0
                                         let yAtpX = splineFunction (xAtS0 - 0.05)
                                         let yAtaX = splineFunction (xAtS0 + 0.05)
-                                        if   sigBigger yAtX yAtpX && sigBigger yAtX yAtaX then Some (createExtremum  1 xAtS0) //(1.,xAtS0)
-                                        elif sigBigger yAtpX yAtX && sigBigger yAtaX yAtX then Some (createExtremum -1 xAtS0) //(-1.,xAtS0)
+                                        if   sigBigger yAtX yAtpX && sigBigger yAtX yAtaX then Some (Extremum.Create  1 xAtS0) //(1.,xAtS0)
+                                        elif sigBigger yAtpX yAtX && sigBigger yAtaX yAtX then Some (Extremum.Create -1 xAtS0) //(-1.,xAtS0)
                                         else None//real saddle point
-                                | w when s1 < 0. -> Some (createExtremum 1 xAtS0) //(1.,xAtS0)
-                                | _ -> Some (createExtremum -1 xAtS0)//(-1.,xAtS0)
+                                | w when s1 < 0. -> Some (Extremum.Create 1 xAtS0) //(1.,xAtS0)
+                                | _ -> Some (Extremum.Create -1 xAtS0)//(-1.,xAtS0)
                                 )
                         extrema
                         //|> List.filter (fun (i,xv) -> i <> 0.)
@@ -1071,7 +1185,7 @@ module TemporalClassification =
                         //    Vector.init (tmp.Length+2) (fun i -> if i>0 && i<=tmp.Length then tmp.[i-1] else 0.0)
 
                         let (mgcv,gcv) = getGCV (aMat |> Matrix.ofArray2D) (Matrix.ofArray2D D) (Matrix.ofArray2D H) W y.Length y a' lambd
-                        createInnerResult a' mgcv aMat e' gcv lambd
+                        InnerResult.Create a' mgcv aMat e' gcv lambd
                         )
                 //minimize the gcv in respect to the used smoothing factor lambda
                 
