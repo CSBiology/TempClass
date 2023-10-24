@@ -6,7 +6,7 @@ let project = "TempClass"
 
 let testProjects = 
     [
-        // add relative paths (from project root) to your testprojects here
+        "tests/TempClass.Tests/TempClass.Tests.fsproj"
     ]
 
 let solutionFile  = $"{project}.sln"
