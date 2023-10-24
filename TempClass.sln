@@ -1,9 +1,45 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.7.34003.232
+VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "TempClass", "TempClass\TempClass.fsproj", "{99D38204-7741-4952-926C-D08E1C19174D}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{AA458381-00FD-4836-9768-ADA66FFFC854}"
+EndProject
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "TempClass", "src\TempClass\TempClass.fsproj", "{128BF588-7BBF-4505-9EEB-68C90989C993}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{BF60E097-040C-4EDF-9837-9383C4E07814}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "img", "img", "{3CD5D487-C4B2-438E-852D-74F6908BF78A}"
+	ProjectSection(SolutionItems) = preProject
+		docs\img\docuExample.png = docs\img\docuExample.png
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "references", "references", "{09C0F6D2-9AD4-468A-B568-43E276B205C9}"
+	ProjectSection(SolutionItems) = preProject
+		docs\references\Can J Statistics - 2012 - Meyer - Constrained penalized splines.pdf = docs\references\Can J Statistics - 2012 - Meyer - Constrained penalized splines.pdf
+		docs\references\Constrained_smoothing_splines_revisited_Turlach1997.pdf = docs\references\Constrained_smoothing_splines_revisited_Turlach1997.pdf
+		docs\references\Wood1994.pdf = docs\references\Wood1994.pdf
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "data", "data", "{79F4DD6C-C5C2-40E6-A03D-800DD039494E}"
+	ProjectSection(SolutionItems) = preProject
+		data\imputeKnnNoLow_40_HS.tsv = data\imputeKnnNoLow_40_HS.tsv
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "build", "build", "{6AFCD250-9D87-4FA2-9690-F6A3B1BC83BE}"
+	ProjectSection(SolutionItems) = preProject
+		build.cmd = build.cmd
+		build.sh = build.sh
+		global.json = global.json
+	EndProjectSection
+EndProject
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "build", "build\build.fsproj", "{B6FC2058-F490-4A62-B28E-A2DFE5BF9CA3}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "project", "project", "{023C6670-0A46-496F-AA3D-2BCDFA1E364D}"
+	ProjectSection(SolutionItems) = preProject
+		README.md = README.md
+		RELEASE_NOTES.md = RELEASE_NOTES.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,15 +47,25 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{99D38204-7741-4952-926C-D08E1C19174D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{99D38204-7741-4952-926C-D08E1C19174D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{99D38204-7741-4952-926C-D08E1C19174D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{99D38204-7741-4952-926C-D08E1C19174D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{128BF588-7BBF-4505-9EEB-68C90989C993}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{128BF588-7BBF-4505-9EEB-68C90989C993}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{128BF588-7BBF-4505-9EEB-68C90989C993}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{128BF588-7BBF-4505-9EEB-68C90989C993}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B6FC2058-F490-4A62-B28E-A2DFE5BF9CA3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B6FC2058-F490-4A62-B28E-A2DFE5BF9CA3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B6FC2058-F490-4A62-B28E-A2DFE5BF9CA3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B6FC2058-F490-4A62-B28E-A2DFE5BF9CA3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{128BF588-7BBF-4505-9EEB-68C90989C993} = {AA458381-00FD-4836-9768-ADA66FFFC854}
+		{3CD5D487-C4B2-438E-852D-74F6908BF78A} = {BF60E097-040C-4EDF-9837-9383C4E07814}
+		{09C0F6D2-9AD4-468A-B568-43E276B205C9} = {BF60E097-040C-4EDF-9837-9383C4E07814}
+		{B6FC2058-F490-4A62-B28E-A2DFE5BF9CA3} = {6AFCD250-9D87-4FA2-9690-F6A3B1BC83BE}
+	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {88542804-1DAC-4C7B-919E-55DBEBBD25F2}
+		SolutionGuid = {58F80AF2-F70D-4B01-8282-C450CF50E94B}
 	EndGlobalSection
 EndGlobal
