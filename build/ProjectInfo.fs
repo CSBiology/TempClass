@@ -13,7 +13,7 @@ let solutionFile  = $"{project}.sln"
 
 let configuration = "Release"
 
-let gitOwner = "bvenn"
+let gitOwner = "csbiology"
 
 let gitHome = $"https://github.com/{gitOwner}"
 
