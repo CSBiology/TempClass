@@ -72,3 +72,10 @@ visualizationSpline
 ## Charting result
 
 ![example result](docs/img/docuExample.png)
+
+## References
+
+- Anderson E. et al., 1999, LAPACK Users' Guide, Society for Industrial and Applied Mathematics, Philadelphia, PA, 3rd Edition, 0-89871-447-8
+- Wood SN., 1994, Monotonic smoothing splines fitted by cross validation, SIAM J. Sci. Comput., Vol. 15, No. 5, pp. 1126-1133
+- Turlach B., 1997, Constrained Smoothing Splines Revisited, The Australian National University, Canberra ACT 0200
+- Meyer MC., 2012, Constrained penalized splines, The Canadian Journal of Statistics, Vol. 40, No. 1, pp. 190–206

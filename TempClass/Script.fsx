@@ -85,5 +85,3 @@ let res =
 ]
 |> Chart.Grid(2,1)
 |> Chart.show
-
-//todo replace gridsearch with bisection?

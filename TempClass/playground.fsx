@@ -1,63 +1,4 @@
-﻿
-
-#r @"C:\Users\bvenn\source\repos\TempClass\TempClass\bin\Debug\net472\FSharp.Stats.dll"
-#r @"C:\Users\bvenn\source\repos\TempClass\TempClass\bin\Debug\net472\TempClass.dll"
-#r "nuget: Plotly.NET, 4.2.0"
-
-open Plotly.NET
-open FSharp.Stats
-open TempClass
-open TempClass.TemporalClassification
-open Plotly.NET
-
-FSharp.Stats.ServiceLocator.setEnvironmentPathVariable (@"\..\TempClass\lib")
-FSharp.Stats.Algebra.LinearAlgebra.Service()
-
-
-// time points with spacing according to kinetic expectation
-let timepoints = vector [|1.;2.;3.;4.;5.;6.;7.;8.|]
-
-// three replicates where measured at each of the 8 time points
-let intensitiesProteinA = 
-    [|
-        [|17.74781999; 17.60999355; 17.3816851|];
-        [|17.44109769; 17.42662059; 17.98721015|];
-        [|17.79075992; 17.6181864; 17.66741748|];
-        [|17.53004396; 18.35447924; 17.84085591|];
-        [|17.90062327; 17.65002708; 17.60924143|];
-        [|17.77776007; 17.80117604; 17.55941645|];
-        [|17.1401598; 17.73320743; 17.93044716|];
-        [|18.43547806; 18.23607406; 17.99477221|]
-    |]
-
-// Time point weighting method
-let weighting = Fitting.WeightingMethod.StandardDeviation
-
-// Minimization criterion for the final model selection. Shapebased optimization is carried out using mGCV
-let minimizer = Fitting.Minimizer.AICc
-
-// smoothing spline result
-let (result,modelQualityScores) = Fitting.getBestFit timepoints intensitiesProteinA weighting minimizer
-
-// used smoothing strength
-let lambda = result.Lambda //226.44802
-
-
-// classification decription of the signal. If the intensities do not exceed a range of 0.05, they are classified as constant signals
-// alternatively, ANOVA filtering can be applied
-let classification = Classification.getClassification timepoints result.TraceA result.TraceC 0.05 1.
-
-// function that takes a x vale and returns the predicted y value of the constrained smoothing spline
-let splineFunction : float -> float = result.SplineFunction
-
-let visualizationSpline = 
-    TemporalClassification.Vis.getChart result (Some modelQualityScores)
-
-visualizationSpline
-|> Chart.show
-
-
-#time "on"
+﻿#time "on"
  
 #r @"C:\Users\bvenn\source\repos\TempClass\TempClass\bin\Debug\net472\FSharp.Stats.dll"
 #r @"C:\Users\bvenn\source\repos\TempClass\TempClass\bin\Debug\net472\TempClass.dll"
@@ -83,53 +24,7 @@ open Plotly.NET.StyleParam
 open Plotly.NET.LayoutObjects
 
 
-
-
-
-
-
-
-// time points with spacing according to kinetic expectation
-let timepoints = vector [|1.;2.;3.;4.;5.;6.;7.;8.|]
-
-// three replicates where measured at each of the 8 time points
-let intensitiesProteinA = 
-    [|
-        [|17.74781999; 17.60999355; 17.3816851|];
-        [|17.44109769; 17.42662059; 17.98721015|];
-        [|17.79075992; 17.6181864; 17.66741748|];
-        [|17.53004396; 18.35447924; 17.84085591|];
-        [|17.90062327; 17.65002708; 17.60924143|];
-        [|17.77776007; 17.80117604; 17.55941645|];
-        [|17.1401598; 17.73320743; 17.93044716|];
-        [|18.43547806; 18.23607406; 17.99477221|]
-    |]
-
-// Time point weighting method
-let weighting = Fitting.WeightingMethod.StandardDeviation
-
-// Minimization criterion for the final model selection. Shapebased optimization is carried out using mGCV
-let minimizer = Fitting.Minimizer.AICc
-
-// smoothing spline result
-let (result,modelQualityScores) = Fitting.getBestFit timepoints intensitiesProteinA weighting minimizer
-
-// used smoothing strength
-let lambda = result.Lambda //226.44802
-
-
-// classification decription of the signal. If the intensities do not exceed a range of 0.05, they are classified as constant signals
-// alternatively, ANOVA filtering can be applied
-let classification = Classification.getClassification timepoints result.TraceA result.TraceC 0.05 1.
-
-// function that takes a x vale and returns the predicted y value of the constrained smoothing spline
-let splineFunction : float -> float = result.SplineFunction
-
-let visualizationSpline = 
-    TemporalClassification.Vis.getChart result (Some modelQualityScores)
-
-visualizationSpline
-|> Chart.show
+1+1
 
 
 
@@ -232,13 +127,6 @@ let data =
         zeroamount && emptyTP //&& anova
         )
 
-let plotI i =
-    let tc,models = (TemporalClassification.Fitting.getBestFit timepoints (snd data.[i] |> Array.chunkBySize 3) Fitting.WeightingMethod.StandardDeviation Fitting.Minimizer.AICc)
-    TemporalClassification.Vis.getChart tc (Some models)
-
-
-(snd data.[7] |> Array.chunkBySize 3)
-
 type Characterization = {
     ID : string
     Signal : vector 
@@ -250,6 +138,16 @@ type Characterization = {
         static member Create id s b c fq = {ID=id; Signal = s; BestFit=b; Chart=c; FitQuality=fq}
 
 let timepoints = [1. .. 8.] |> vector
+
+let plot i sens = 
+    let result,modelQualityScores = Fitting.getBestFit timepoints (snd data.[i] |> Array.chunkBySize 3) Fitting.WeightingMethod.StandardDeviation Fitting.Minimizer.AICc
+    
+    let classification = Classification.getClassification result.XValues.Value result.TraceA result.TraceC 0.05 sens
+    TemporalClassification.Vis.getChart result (Some modelQualityScores)
+    |> Chart.withTitle classification
+    |> Chart.show
+
+
 
 let proc (id,signal:float[]) weighting minimizer =
     let ys = signal
