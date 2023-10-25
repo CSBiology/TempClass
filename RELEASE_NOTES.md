@@ -1,4 +1,3 @@
-### 0.0.0 (Released 2023-10-24)
+### 0.0.1 (Released 2023-10-25)
 * Additions:
-    * Initial set up for RELEASE_Notes.md
-
+    * Initial release
