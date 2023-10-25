@@ -10,20 +10,15 @@ identify biologically interpretable correlations among the data.
 ## Usage:
 
 ```fsharp
-#r "TempClass.dll"
-#r "FSharp.Stats.dll"
-#r "nuget: Plotly.NET, 4.2.0"
-#r "nuget: FSharp.Collections.ParallelSeq, 1.2.0"
+#r "nuget: TempClass, 0.0.1"
 
+open TempClass
 open FSharp.Stats
 open Plotly.NET
-open TempClass
-open TempClass.TemporalClassification
-open Plotly.NET
 
-FSharp.Stats.ServiceLocator.setEnvironmentPathVariable (@"\..\TempClass\lib")
+// required for efficient SVD calculations
+FSharp.Stats.ServiceLocator.setEnvironmentPathVariable (@"C:\Users\USERNAME\.nuget\packages\tempclass\0.0.1\netlib_LAPACK")
 FSharp.Stats.Algebra.LinearAlgebra.Service()
-
 
 // time points with spacing according to kinetic expectation
 let timepoints = vector [|1.;2.;3.;4.;5.;6.;7.;8.|]

@@ -264,7 +264,7 @@ module TC_SVD =
                 e.[p - 2] <- 0.0
                 for j = p-2 downto k do
                     let mutable t = Geometry.hypot s.[j] f
-                    printfn "t : %A - f: %A" t f
+                    //printfn "t : %A - f: %A" t f
                     let cs = s.[j] / t
                     let sn = f / t
                     s.[j] <- t
