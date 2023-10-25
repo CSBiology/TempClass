@@ -1,4 +1,4 @@
-﻿#time "on"
+﻿
  
 #r @"C:\Users\bvenn\source\repos\TempClass\src\TempClass\bin\Release\net472\FSharp.Stats.dll"
 #r @"C:\Users\bvenn\source\repos\TempClass\src\TempClass\bin\Release\net472\TempClass.dll"
@@ -158,10 +158,16 @@ plot 09 1.
 plot 10 1.
 
 let (test,models) = Fitting.getBestFit timepoints (snd data.[10] |> Array.chunkBySize 3) Fitting.WeightingMethod.StandardDeviation Fitting.Minimizer.AICc
+
 test.Ctemp
 |> JaggedArray.ofArray2D
 |> Chart.Heatmap
 |> Chart.show
+
+
+
+
+
 
 let proc (id,signal:float[]) weighting minimizer =
     let ys = signal
@@ -546,293 +552,9 @@ let extremaClassCount4 =
 |> Chart.withLayoutStyle(Font=(Font.init(Family=FontFamily.Arial,Size=16))) 
 |> Chart.show
 
-// make word file
-// import histograms
-//get example charts for some classes
 
-(*
-The 3 replicates are separated and fitted individually!!
-  - Temporal classification with GCV and equal weighting (bacause n=1)
-  - polynomial interpolation
-  - linearspline
-At 71 positions in equally spaced intervals, the variance of the three replicate fits are determined. These variances are pooled and visualised as histograms.
-Expectation:
-- TC (something in between)
-- lin (lowest variance because all outlier even out to one "average" smoothed response)
-- poly ()
-- linSpline (highest variance)
-*)
-
-//let procSingle (id,signal:float[]) =
-//    let ys1 = 
-//        signal
-//        |> Seq.chunkBySize 3 
-//        |> Seq.map (fun x -> x.[0])
-//        |> vector 
-//    let ys2 = 
-//        signal
-//        |> Seq.chunkBySize 3 
-//        |> Seq.map (fun x -> x.[1])
-//        |> vector 
-//    let ys3 = 
-//        signal
-//        |> Seq.chunkBySize 3 
-//        |> Seq.map (fun x -> x.[2])
-//        |> vector 
-
-//    let fitB1 = Fitting.getBestFit timepoints ys1 1 Fitting.WeightingMethod.Equal Fitting.Minimizer.GCV
-//    let fitB2 = Fitting.getBestFit timepoints ys2 1 Fitting.WeightingMethod.Equal Fitting.Minimizer.GCV
-//    let fitB3 = Fitting.getBestFit timepoints ys3 1 Fitting.WeightingMethod.Equal Fitting.Minimizer.GCV
-    
-//    let poly1 = Interpolation.Polynomial.fit (Interpolation.Polynomial.coefficients timepoints ys1)
-//    let poly2 = Interpolation.Polynomial.fit (Interpolation.Polynomial.coefficients timepoints ys2)
-//    let poly3 = Interpolation.Polynomial.fit (Interpolation.Polynomial.coefficients timepoints ys3)
-    
-//    let lin1 = Interpolation.LinearSpline.initInterpolate (Array.ofSeq timepoints) (Array.ofSeq ys1) |> Interpolation.LinearSpline.interpolate
-//    let lin2 = Interpolation.LinearSpline.initInterpolate (Array.ofSeq timepoints) (Array.ofSeq ys2) |> Interpolation.LinearSpline.interpolate
-//    let lin3 = Interpolation.LinearSpline.initInterpolate (Array.ofSeq timepoints) (Array.ofSeq ys3) |> Interpolation.LinearSpline.interpolate
-
-//    let scatter = 
-//        signal 
-//        |> Seq.chunkBySize 3 
-//        |> Seq.mapi (fun i x -> x |> Array.map (fun xi -> timepoints.[i],xi)) 
-//        |> Seq.concat
-//        |> Chart.Point
-    
-
-//    let spline (fit:Fitting.TempClassResult) color = 
-//        [1. .. 0.01 .. 8.]
-//        |> List.map (fun x -> x,fit.SplineFunction x)
-//        |> fun x -> Chart.Line(x,LineColor=Color.fromHex color)
-//        |> Chart.withTraceInfo (sprintf "A_%.3f  G_%.3f" fit.AICc fit.GCV)
-
-//    let polyFit (fit:float -> float) color = 
-//        [1. .. 0.01 .. 8.]
-//        |> List.map (fun x -> x,fit x)
-//        |> fun x -> Chart.Line(x,LineColor=Color.fromHex color)
-
-//    let linear (fit:float -> float) color = 
-//        [1. .. 0.01 .. 8.]
-//        |> List.map (fun x -> x,fit x)
-//        |> fun x -> Chart.Line(x,LineColor=Color.fromHex color)
-
-//    let combined =
-//        [
-//        scatter
-//        spline fitB1 "#fc7e0f"
-//        spline fitB2 "#fc7e0f"
-//        spline fitB3 "#fc7e0f"
-//        //polyFit poly1 "#2ca02c"
-//        //polyFit poly2 "#2ca02c"
-//        //polyFit poly3 "#2ca02c"
-//        linear lin1 "#1f77b4"
-//        linear lin2 "#1f77b4"
-//        linear lin3 "#1f77b4"
-//        ]
-//        |> Chart.combine
-//        |> Chart.withSize (1000.,800.)
-//        |> Chart.withTemplate ChartTemplates.lightMirrored
-//        //|> Chart.show
-//    let variances = 
-//        [|1. .. 0.1 .. 8.|] 
-//        |> Array.map (fun x -> 
-//            let varTC = 
-//                [
-//                    fitB1.SplineFunction x
-//                    fitB2.SplineFunction x
-//                    fitB3.SplineFunction x
-//                ]
-//                |> Seq.var
-//            let varlin =
-//                [
-//                    lin1 x
-//                    lin2 x
-//                    lin3 x
-//                ]
-//                |> Seq.var
-//            let varpoly =
-//                [
-//                    poly1 x
-//                    poly2 x
-//                    poly3 x
-//                ]
-//                |> Seq.var
-//            [|varTC;varlin;varpoly|]
-//        )
-//        |> Array.transpose
-//        //|> Array.map (fun x -> Seq.median x)
-
-
-//    variances//[fitB1.SplineFunction;fitB2.SplineFunction;fitB3.SplineFunction;poly1;poly2;poly3]
-
-//10 in 10 min
-    
-//let xx = 
-//    data
-//    |> Array.ofSeq
-//    //|> FSharp.Stats.Array.shuffleFisherYates
-//    |> fun x -> x.[0..199]
-//    |> Array.map procSingle
-
-
-//xx
-//|> Array.transpose
-//|> Array.map Array.concat
-//|> Array.mapi (fun i x -> 
-//    match i with
-//    | 0 -> Chart.Histogram((Array.map log x),Name="TC") |> Chart.withAxisTitles "" "count"
-//    | 1 -> Chart.Histogram((Array.map log x),Name="lin") |> Chart.withAxisTitles "" "count"
-//    | 2 -> Chart.Histogram((Array.map log x),Name="poly") |> Chart.withAxisTitles "log variance" "count"
-//    )
-//|> Chart.Grid(3,1)
-//|> Chart.show
-
-
-
-
-
-
-
-
-
-
-
-
-////required because fitting is not possible when data is unbalanced!
-//let getBestFit xVal yVal weightingMethod minimizer = 
-//    let getMyWeighting (xVal:Vector<float>) (yVal:float[][]) (w_method:Fitting.WeightingMethod) =
-//        match w_method with
-//        | Equal ->
-//            Matrix.diag(Vector.oneCreate xVal.Length)
-//        //1/var centered around 1
-//        | Variance ->
-//            let Wtemp = Matrix.create xVal.Length xVal.Length 0.            
-//            let diagVec = 
-//                yVal |> Array.map (fun x -> 1. / Seq.var x)
-//                //if yVal.Length%numRep = 0 then
-//                //    vector [for i = 0 to xVal.Length - 1 do yield 1. / (yVal.[(i*numRep)..(i*numRep + numRep - 1)] |> Seq.var)]
-//                //else failwithf "arrLength no multiple of replicate number"
-//            let avg = Seq.average diagVec
-//            for i = 0 to xVal.Length - 1 do Wtemp.[i,i] <- diagVec.[i] / avg
-//            Wtemp
-//        //just 1/var not centered
-//        | VarPlain ->
-//            let Wtemp = Matrix.create xVal.Length xVal.Length 0.            
-//            let diagVec =                
-//                yVal |> Array.map (fun x -> 1. / Seq.var x)
-//                //if yVal.Length%numRep = 0 then
-//                //    vector [for i = 0 to xVal.Length - 1 do yield 1. / (yVal.[(i*numRep)..(i*numRep + numRep - 1)] |> Seq.var)]
-//                //else failwithf "arrLength no multiple of replicate number"
-//            for i = 0 to xVal.Length - 1 do Wtemp.[i,i] <- diagVec.[i]
-//            Wtemp
-//        | VarRobust -> //Variance
-//            let Wtemp = Matrix.create xVal.Length xVal.Length 0.            
-//            let diagVec = 
-//                yVal |> Array.map (fun x -> 1. / Seq.stDev x) |> vector
-//                //if yVal.Length%numRep = 0 then
-//                //    vector [for i = 0 to xVal.Length - 1 do yield 1. / (yVal.[(i*numRep)..(i*numRep + numRep - 1)] |> Seq.stDev)]
-//                //else failwithf "arrLength no multiple of replicate number"
-//            //improves robustness of standard weighting
-//            let (maxWtemp,minWtemp) = 
-//                let mean = diagVec |> Seq.mean
-//                let std  = diagVec |> Seq.stDev
-//                (mean + std),(mean - std)
-                
-//            let diagVecNew = 
-//                diagVec |> Vector.map (fun x -> match x with
-//                                                | x when x > maxWtemp -> maxWtemp
-//                                                | x when x < minWtemp -> minWtemp
-//                                                | _ -> x)
-//            let finalDiag = 
-//                let trace = (diagVecNew |> Vector.sum)
-//                let length = (float Wtemp.NumCols)
-//                diagVecNew |> Vector.map (fun x -> x / trace * length)
-//            for i = 0 to xVal.Length - 1 do Wtemp.[i,i] <- finalDiag.[i]
-//            Wtemp
-//        | CV -> 
-//            let Wtemp = Matrix.create xVal.Length xVal.Length 0.
-//            let cvOfVec =
-//                yVal 
-//                |> Array.map (fun g -> 
-//                    max 0. (System.Math.Log((1./(Math.Abs(Seq.cvPopulation g))),2.))
-//                    )
-
-//                //if yVal.Length%numRep = 0 then
-//                //    let length = yVal.Length / numRep 
-//                //    let cv = vector [for i = 0 to length-1 do yield yVal.[i*numRep..i*numRep+numRep-1] |> fun g -> max 0. (System.Math.Log((1./(Math.Abs(Seq.cvPopulation g))),2.))(*(1./((Seq.cvPopulation g) + 0.25))*)] //0.25???
-//                //    cv
-//                //else failwithf "arrLength no multiple of replicate number"
-
-//            for i = 0 to xVal.Length - 1 do Wtemp.[i,i] <- cvOfVec.[i]
-//            Wtemp
-//        | StandardDeviation     ->
-//            let Wtemp = Matrix.create xVal.Length xVal.Length 0.            
-//            let diagVec = 
-//                yVal |> Array.map (fun x -> 1. / Seq.stDev x) |> vector
-
-//                //if yVal.Length%numRep = 0 then
-//                //    vector [for i = 0 to xVal.Length - 1 do yield 1. / (yVal.[(i*numRep)..(i*numRep + numRep - 1)] |> Seq.stDev)]
-//                //else failwithf "arrLength no multiple of replicate number"
-//            let avg = Seq.average diagVec
-//            for i = 0 to xVal.Length - 1 do Wtemp.[i,i] <- diagVec.[i] / avg
-//            Wtemp
-//        | StandardDeviationSqrt ->
-//            let Wtemp = Matrix.create xVal.Length xVal.Length 0.            
-//            let diagVec = 
-//                yVal |> Array.map (fun x -> 1. / Seq.stDev x) |> vector
-//                //if yVal.Length%numRep = 0 then
-//                //    vector [for i = 0 to xVal.Length - 1 do yield Math.Sqrt (1. / (yVal.[(i*numRep)..(i*numRep + numRep - 1)] |> Seq.stDev))]
-//                //else failwithf "arrLength no multiple of replicate number"
-//            let avg = Seq.average diagVec
-//            for i = 0 to xVal.Length - 1 do Wtemp.[i,i] <- diagVec.[i] / avg
-//            Wtemp
-//        | StandardDeviationAdj -> //CV_Norm          ->
-//            let Wtemp = Matrix.create xVal.Length xVal.Length 0.
-//            let cvOfVec =
-//                yVal 
-//                |> Array.map (fun x -> 
-//                    sqrt ( 1. / (Seq.stDev x / Seq.average x))
-//                ) 
-//                |> vector
-//                //if yVal.Length%numRep = 0 then
-//                //    let length = yVal.Length / numRep 
-//                //    let cv = vector [for i = 0 to length-1 do yield yVal.[i*numRep..i*numRep+numRep-1] |> fun x -> sqrt ( 1. / (Seq.stDev x / Seq.average x))]
-//                //    cv
-//                //else failwithf "arrLength no multiple of replicate number"
-//            let cvAvg = Seq.average cvOfVec
-//            for i = 0 to xVal.Length - 1 do Wtemp.[i,i] <- cvOfVec.[i] / cvAvg
-//            Wtemp
-//        | StandardDeviationAdjSqrt ->  //CV_NormSqrt      ->
-//            let Wtemp = Matrix.create xVal.Length xVal.Length 0.
-//            let cvOfVec =
-//                yVal 
-//                |> Array.map (fun x -> 
-//                    sqrt(sqrt ( 1. / (Seq.stDev x / Seq.average x)))
-//                ) 
-//                |> vector
-
-//                //if yVal.Length%numRep = 0 then
-//                //    let length = yVal.Length / numRep 
-//                //    let cv = vector [for i = 0 to length-1 do yield yVal.[i*numRep..i*numRep+numRep-1] |> fun x -> sqrt(sqrt ( 1. / (Seq.stDev x / Seq.average x)))]
-//                //    cv
-//                //else failwithf "arrLength no multiple of replicate number"
-//            let cvAvg = Seq.average cvOfVec
-//            for i = 0 to xVal.Length - 1 do Wtemp.[i,i] <- cvOfVec.[i] / cvAvg
-//            Wtemp
-
-
-
-//    let yValMeans = 
-//        //Seq.getMeanOfReplicates repNumber yVal |> vector
-//        yVal |> Seq.map Seq.mean
-//    let weightingMatrix = (getMyWeighting xVal yVal weightingMethod)
-//    let (cl,fit) = Fitting.getBestFitOfWeighting xVal yValMeans weightingMatrix minimizer
-//    fit
 
 open Fitting.LinearRegression.OrdinaryLeastSquares
-
-
-
 
 
 type Difference = 
@@ -1044,36 +766,6 @@ let processTimePointDelete minimizer weighting =
         )
     ) |> ignore
 
-    ////Histos of distance to orig
-    //[
-    //XcolTC   |> List.map snd |> Chart.Histogram |> Chart.withTraceInfo (sprintf "colTC  : %f" (Seq.var (XcolTC   |> List.map snd))) |> Chart.withAxisTitles "Distance to OrigFit" "#count"
-    //XcolLin  |> List.map snd |> Chart.Histogram |> Chart.withTraceInfo (sprintf "colLin : %f" (Seq.var (XcolLin  |> List.map snd))) |> Chart.withAxisTitles "Distance to OrigFit" "#count"
-    //XcolSpl  |> List.map snd |> Chart.Histogram |> Chart.withTraceInfo (sprintf "colSpl : %f" (Seq.var (XcolSpl  |> List.map snd))) |> Chart.withAxisTitles "Distance to OrigFit" "#count"
-    //XcolPoly |> List.map snd |> Chart.Histogram |> Chart.withTraceInfo (sprintf "colPoly: %f" (Seq.var (XcolPoly |> List.map snd))) |> Chart.withAxisTitles "Distance to OrigFit" "#count"
-    //XcolCubi |> List.map snd |> Chart.Histogram |> Chart.withTraceInfo (sprintf "colCubic: %f" (Seq.var (XcolCubi |> List.map snd))) |> Chart.withAxisTitles "Distance to OrigFit" "#count"
-    //]
-    //|> Chart.Grid(5,1)
-    //|> Chart.withSize(900.,1300.)
-    //|> Chart.withTitle "remove complete TP, DistanceToOrigFit"
-    //|> Chart.show
-
-    //[
-    //Chart.Point(XcolTC,MarkerColor=Color.fromString "#2274b7") |> Chart.withTraceInfo (sprintf "colTC  : %f" (Seq.var (XcolTC   |> List.map snd))) |> Chart.withAxisTitlesYR "Var@TP" "Distance to OrigFit (TC)" (-2.,2.)
-    //Chart.Histogram(XcolTC   |> List.map snd,MarkerColor=Color.fromString "#2274b7") |> Chart.withTraceInfo (sprintf "colTC  : %f" (Seq.var (XcolTC   |> List.map snd))) |> Chart.withAxisTitlesXR "Distance to OrigFit" "#count" (-0.8,0.8)
-    ////Chart.Point(XcolLin,MarkerColor=Color.fromString "#ff8208") |> Chart.withTraceInfo (sprintf "colLin : %f" (Seq.var (XcolLin  |> List.map snd))) |> Chart.withAxisTitlesYR "Var@TP" "Distance to OrigFit" (-2.,2.)
-    ////Chart.Histogram(XcolLin   |> List.map snd,MarkerColor=Color.fromString "#ff8208") |> Chart.withTraceInfo (sprintf "colLin : %f" (Seq.var (XcolLin  |> List.map snd))) |> Chart.withAxisTitlesXR "Distance to OrigFit" "#count" (-0.8,0.8)
-    //Chart.Point(XcolSpl,MarkerColor=Color.fromString "#2c9f2c") |> Chart.withTraceInfo (sprintf "colSpl : %f" (Seq.var (XcolSpl  |> List.map snd))) |> Chart.withAxisTitlesYR "Var@TP" "Distance to OrigFit (LinSpl)" (-2.,2.)
-    //Chart.Histogram(XcolSpl   |> List.map snd,MarkerColor=Color.fromString "#2c9f2c") |> Chart.withTraceInfo (sprintf "colSpl : %f" (Seq.var (XcolSpl  |> List.map snd))) |> Chart.withAxisTitlesXR "Distance to OrigFit" "#count" (-0.8,0.8)
-    //Chart.Point(XcolPoly,MarkerColor=Color.fromString "#d62728") |> Chart.withTraceInfo (sprintf "colPoly: %f" (Seq.var (XcolPoly |> List.map snd))) |> Chart.withAxisTitlesYR "Var@TP" "Distance to OrigFit (Poly)" (-2.,2.)
-    //Chart.Histogram(XcolPoly   |> List.map snd,MarkerColor=Color.fromString "#d62728") |> Chart.withTraceInfo (sprintf "colPoly: %f" (Seq.var (XcolPoly |> List.map snd))) |> Chart.withAxisTitlesXR "Distance to OrigFit" "#count" (-0.8,0.8)
-    //Chart.Point(XcolCubi,MarkerColor=Color.fromString "grey") |> Chart.withTraceInfo (sprintf "colCubic: %f" (Seq.var (XcolCubi |> List.map snd))) |> Chart.withAxisTitlesYR "Var@TP" "Distance to OrigFit (Cubic)" (-2.,2.)
-    //Chart.Histogram(XcolCubi   |> List.map snd,MarkerColor=Color.fromString "grey") |> Chart.withTraceInfo (sprintf "colCubic: %f" (Seq.var (XcolCubi |> List.map snd))) |> Chart.withAxisTitlesXR "Distance to OrigFit" "#count" (-0.8,0.8)
-    //]
-    //|> Chart.Grid(4,2)
-    //|> Chart.withSize(1600.,1300.)
-    //|> Chart.withTitle "remove complete TP, variance@TP to DistanceToOrigFit"
-    //|> Chart.saveHtml(@"C:\Users\venn\source\repos\TemporalClassification\runs\Testing\remove\removeTP\DistanceScatterToOrigFit_varaic",true)
-
     [
     List.unzip XcolTC |> fun (a,b) -> Chart.PointDensity(List.map log a,b,PointMarkerColor= Color.fromString "#2274b7") |> Chart.withTraceInfo (sprintf "colTC  : %f" (Seq.var (XcolTC   |> List.map snd))) |> Chart.withAxisTitlesYR "log Var@TP" "Distance to OrigFit" (-0.4,0.4)
     Chart.Histogram(XcolTC   |> List.map snd,MarkerColor=Color.fromString "#2274b7") |> Chart.withTraceInfo (sprintf "colTC  : %f" (Seq.var (XcolTC   |> List.map snd))) |> Chart.withAxisTitlesXR "Distance to OrigFit (TC)" "#count" (-0.8,0.8)
@@ -1112,47 +804,6 @@ let processTimePointDelete minimizer weighting =
             X2MeancolCubic <-   (sqrt v,p.[4])::X2MeancolCubic
         )
     ) |> ignore
-
-    //Scatter Var to distance 2Mean
-    //[
-    //X2MeancolTC   |> Chart.Point |> Chart.withTraceInfo (sprintf "colTC  : %f" (Seq.var (X2MeancolTC   |> List.map snd))) |> Chart.withAxisTitles "Distance to orig fit" "#count"
-    ////X2MeancolLin  |> Chart.Point |> Chart.withTraceInfo (sprintf "colLin : %f" (Seq.var (X2MeancolLin  |> List.map snd))) |> Chart.withAxisTitles "Distance to orig fit" "#count"
-    //X2MeancolSpl  |> Chart.Point |> Chart.withTraceInfo (sprintf "colSpl : %f" (Seq.var (X2MeancolSpl  |> List.map snd))) |> Chart.withAxisTitles "Distance to orig fit" "#count"
-    //X2MeancolPoly |> Chart.Point |> Chart.withTraceInfo (sprintf "colPoly: %f" (Seq.var (X2MeancolPoly |> List.map snd))) |> Chart.withAxisTitles "Distance to orig fit" "#count"
-    //X2MeancolCubic |> Chart.Point |> Chart.withTraceInfo (sprintf "colCubic: %f" (Seq.var (X2MeancolCubic |> List.map snd))) |> Chart.withAxisTitles "Distance to orig fit" "#count"
-    //]
-    //|> Chart.Grid(4,1)
-    //|> Chart.withSize(900.,1300.)
-    //|> Chart.withTitle "remove complete TP, variance@TP to DistanceToTPmean"
-    //|> Chart.show
-
-    //[
-    //X2MeancolTC   |> List.map snd |> Chart.Histogram |> Chart.withTraceInfo (sprintf "colTC  : %f" (Seq.var (X2MeancolTC   |> List.map snd))) |> Chart.withAxisTitles "" "count"
-    ////X2MeancolLin  |> List.map snd |> Chart.Histogram |> Chart.withTraceInfo (sprintf "colLin : %f" (Seq.var (X2MeancolLin  |> List.map snd))) |> Chart.withAxisTitles "" "count"
-    //X2MeancolSpl  |> List.map snd |> Chart.Histogram |> Chart.withTraceInfo (sprintf "colSpl : %f" (Seq.var (X2MeancolSpl  |> List.map snd))) |> Chart.withAxisTitles "" "count"
-    //X2MeancolPoly |> List.map snd |> Chart.Histogram |> Chart.withTraceInfo (sprintf "colPoly: %f" (Seq.var (X2MeancolPoly |> List.map snd))) |> Chart.withAxisTitles "" "count"
-    //X2MeancolCubic |> List.map snd |> Chart.Histogram |> Chart.withTraceInfo (sprintf "colCubic: %f" (Seq.var (X2MeancolCubic |> List.map snd))) |> Chart.withAxisTitles "Distance to mean" "count"
-    //]
-    //|> Chart.Grid(4,1)
-    //|> Chart.withTitle "remove complete TP, DistanceToTPmean"
-    //|> Chart.saveHtml(@"C:\Users\venn\source\repos\TemporalClassification\runs\Testing\remove\removeTP\DistanceToMean_varaic",true)
-    //
-    //[
-    //Chart.Point(X2MeancolTC,MarkerColor=Color.fromString "#2274b7") |> Chart.withTraceInfo (sprintf "colTC  : %f" (Seq.var (X2MeancolTC   |> List.map snd))) |> Chart.withAxisTitlesYR "Var@TP" "Distance to TPMean (TC)" (-2.,2.)
-    //Chart.Histogram(X2MeancolTC   |> List.map snd,MarkerColor=Color.fromString "#2274b7") |> Chart.withTraceInfo (sprintf "colTC  : %f" (Seq.var (X2MeancolTC   |> List.map snd))) |> Chart.withAxisTitlesXR "Distance to Mean" "#count" (-0.8,0.8)
-    ////Chart.Point(X2MeancolLin,MarkerColor=Color.fromString "#ff8208") |> Chart.withTraceInfo (sprintf "colLin : %f" (Seq.var (X2MeancolLin  |> List.map snd))) |> Chart.withAxisTitlesYR "Var@TP" "Distance to TPMean" (-2.,2.)
-    ////Chart.Histogram(X2MeancolLin   |> List.map snd,MarkerColor=Color.fromString "#ff8208") |> Chart.withTraceInfo (sprintf "colLin : %f" (Seq.var (X2MeancolLin  |> List.map snd))) |> Chart.withAxisTitlesXR "Distance to Mean" "#count" (-0.8,0.8)
-    //Chart.Point(X2MeancolSpl,MarkerColor=Color.fromString "#2c9f2c") |> Chart.withTraceInfo (sprintf "colSpl : %f" (Seq.var (X2MeancolSpl  |> List.map snd))) |> Chart.withAxisTitlesYR "Var@TP" "Distance to TPMean (LinSpline)" (-2.,2.)
-    //Chart.Histogram(X2MeancolSpl   |> List.map snd,MarkerColor=Color.fromString "#2c9f2c") |> Chart.withTraceInfo (sprintf "colSpl : %f" (Seq.var (X2MeancolSpl  |> List.map snd))) |> Chart.withAxisTitlesXR "Distance to Mean" "#count" (-0.8,0.8)
-    //Chart.Point(X2MeancolPoly,MarkerColor=Color.fromString "#d62728") |> Chart.withTraceInfo (sprintf "colPoly: %f" (Seq.var (X2MeancolPoly |> List.map snd))) |> Chart.withAxisTitlesYR "Var@TP" "Distance to TPMean (Polynomial)" (-2.,2.)
-    //Chart.Histogram(X2MeancolPoly   |> List.map snd,MarkerColor=Color.fromString "#d62728") |> Chart.withTraceInfo (sprintf "colPoly: %f" (Seq.var (X2MeancolPoly |> List.map snd))) |> Chart.withAxisTitlesXR "Distance to Mean" "#count" (-0.8,0.8)
-    //Chart.Point(X2MeancolCubic,MarkerColor=Color.fromString "grey") |> Chart.withTraceInfo (sprintf "colCubic: %f" (Seq.var (X2MeancolCubic |> List.map snd))) |> Chart.withAxisTitlesYR "Var@TP" "Distance to TPMean (Cubic)" (-2.,2.)
-    //Chart.Histogram(X2MeancolCubic   |> List.map snd,MarkerColor=Color.fromString "grey") |> Chart.withTraceInfo (sprintf "colCubic: %f" (Seq.var (X2MeancolCubic |> List.map snd))) |> Chart.withAxisTitlesXR "Distance to Mean" "#count" (-0.8,0.8)
-    //]
-    //|> Chart.Grid(4,2)
-    //|> Chart.withSize(1600.,1300.)
-    //|> Chart.withTitle "remove complete TP, variance@TP to DistanceToTPmean"
-    //|> Chart.saveHtml(@"C:\Users\venn\source\repos\TemporalClassification\runs\Testing\remove\removeTP\DistanceScatterToMean_varaic",true)
 
     [
     List.unzip X2MeancolTC |> fun (a,b) -> Chart.PointDensity(List.map log a,b,PointMarkerColor= Color.fromString "#2274b7") |> Chart.withTraceInfo (sprintf "colTC  : %f" (Seq.var (X2MeancolTC   |> List.map snd))) |> Chart.withAxisTitlesYR "log Var@TP" "Distance to TPMean" (-0.4,0.4)
@@ -1211,54 +862,6 @@ processTimePointDelete Minimizer.AICc WeightingMethod.StandardDeviationAdj
 processTimePointDelete Minimizer.AICc WeightingMethod.StandardDeviation
 processTimePointDelete Minimizer.AICc WeightingMethod.CV
 printfn "All AIC Combinations of TP deletion ready!"
-
-//cursor 230815 14:11 Here!!
-
-
-(*
-Histograme von
-	- Distanz zu Orig wenn TP fehlt - ok
-	- Distanz zu Orig wenn Rep fehlt - ok
-	- Distanz zu Mean wenn TP fehlt - 
-	- Distanz zu Orig wenn Rep fehlt - 
-ScatterPlots von
-	- Var vs Distance to Orig wenn TP fehlt
-	- Var vs Distance to Mean wenn TP fehlt
-	- Var vs Distance to Orig wenn Rep fehlt
-	- Var vs Distance to Mean wenn Rep fehlt
-
-Was wurde bei complexomics gemacht?
-- Silouette index auf Replikaten=?!
-
-*)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1498,85 +1101,6 @@ let singleRepStDevAdjGcv    = summarizeSingleRepRemove Minimizer.GCV WeightingMe
 printfn "start StDevGcv %A" (System.DateTime.Now)
 let singleRepStDevGcv    = summarizeSingleRepRemove Minimizer.GCV WeightingMethod.StandardDeviation
 printfn "All combintations GCV of singleRepDeletion ready!"
-
-
-
-//let getBoxPlot (input:(float*float) list) colOutline colFill title yAxisTitle = 
-//    input
-//    |> List.sortBy fst
-//    |> List.chunkBySize (input.Length / 9)
-//    |> List.map (fun x -> 
-//        let xs,ys = List.unzip x
-//        let xd =  List.map log xs 
-//        let xV = Array.init x.Length (fun _ -> Seq.mean xd)
-//        Chart.BoxPlot(X=xV,Y=ys,Name=sprintf "%s %.3f" title (Seq.stDev ys),FillColor=Color.fromString colFill,OutlineColor=Color.fromString colOutline)
-//        )
-//    |> Chart.combine
-//    |> Chart.withAxisTitlesYR "log var@TP" yAxisTitle (-0.2,0.2)
-//[
-//getBoxPlot tomeanTC  "#2274b7" "#91b6dc" "TC" "Distance to Mean"
-//getBoxPlot tomeanLin "#ff7f0e" "#ffbe86" "Lin" "Distance to Mean"
-//getBoxPlot tomeanSpl "#2ca02c" "#95cf95" "Spl" "Distance to Mean"
-//getBoxPlot tomeanPoly "#d62728" "#ea9293" "Poly" "Distance to Mean"
-//]
-//|> Chart.Grid(4,1)
-//|> Chart.withSize(900.,1300.)
-//|> Chart.withTitle "remove single Rep@TP, variance@TP to DistanceToMean"
-//|> Chart.saveHtml (@"C:\Users\venn\source\repos\TemporalClassification\runs\Testing\remove\removeSingleRepatTP\box_toMean",true)
-//[
-//getBoxPlot toOrigTC  "#2274b7" "#91b6dc" "TC" "Distance to OrigFit"
-//getBoxPlot toOrigLin "#ff7f0e" "#ffbe86" "Lin" "Distance to OrigFit"
-//getBoxPlot toOrigSpl "#2ca02c" "#95cf95" "Spl" "Distance to OrigFit"
-//getBoxPlot toOrigPoly "#d62728" "#ea9293" "Poly" "Distance to OrigFit"
-//]
-//|> Chart.Grid(4,1)
-//|> Chart.withSize(900.,1300.)
-//|> Chart.withTitle "remove single Rep@TP, variance@TP to DistanceToOrigFit"
-//|> Chart.saveHtml (@"C:\Users\venn\source\repos\TemporalClassification\runs\Testing\remove\removeSingleRepatTP\box_toOrigFit",true)
-
-
-//move to main function, as well above in remove timepoint!!
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

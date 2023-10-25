@@ -1633,7 +1633,8 @@ module TemporalClassification =
         /// value, the curge is expected to be constant.</param>
         /// <param name="sensitivity">
         /// if no extrema exist, the classification is based on curvature properties. 
-        /// 1: all curvature changes are interpreted for classification
+        /// curvature extremum is used for classification of: curvature/slope greater than 10 * (1-sensitivity).
+        /// special case: 1 = all curvature extrema are used for classification.
         /// </param>
         /// <returns>Classification string in the form of e.g. Max2.00,Min3.00,Max5.00</returns>
         let getClassification xValues traceA traceC linearThreshold sensitivity = 
