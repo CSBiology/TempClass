@@ -4,7 +4,18 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <WarnOn>3390;$(WarnOn)</WarnOn>
   </PropertyGroup>
-
+  <PropertyGroup>
+    <Authors>Benedikt Venn, Timo Muehlhaus, Thomas Leifeld</Authors>
+    <Title>TempClass</Title>
+    <Owners>csbiology</Owners>
+    <Description>Project for fitting constrained smoothing splines to short time series affected by noise.</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageTags>F# FSharp dotnet data-science fitting spline classification</PackageTags>
+    <RepositoryUrl>https://github.com/CSBiology/TempClass</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <FsDocsLicenseLink>https://github.com/CSBiology/TempClass/blob/main/LICENSE</FsDocsLicenseLink>
+    <FsDocsReleaseNotesLink>https://github.com/CSBiology/TempClass/blob/main/RELEASE_NOTES.md</FsDocsReleaseNotesLink>
+  </PropertyGroup>
   <ItemGroup>
     <None Include="playground.fsx" />
     <Compile Include="QP.fs" />
