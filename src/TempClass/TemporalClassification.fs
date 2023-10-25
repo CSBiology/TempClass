@@ -422,11 +422,13 @@ module TemporalClassification =
                 evalAt i t
                 )
 
-
-
-
-
-        /// calculates extrema present in the given smoothing spline
+        /// <summary>Calculates extrema present in the given smoothing spline. Based on first and second
+        /// derivative, the curve is analyzed for extrema.
+        /// </summary>
+        /// <param name="x">vector of x values</param>
+        /// <param name="a">vector of y values at the position of the x values</param>
+        /// <param name="c">vector of curvature (second derivative) at the position of the x values</param>
+        /// <returns>Lists of extreme points</returns>
         let getExtrema (x:Vector<float>) (a:Vector<float>) (c:Vector<float>) =
             let n = x.Length 
             //define interval stepwidths
@@ -492,7 +494,14 @@ module TemporalClassification =
                     |> List.sortBy (fun ex -> ex.Xvalue)
                     |> List.map (fun ex -> {ex with Xvalue = Aux.roundToNext ex.Xvalue x})
                     |> List.distinct
-
+        
+        /// <summary>Determines extrema present in the given smoothing spline. Subsequently, the
+        /// first interval behaviour (in- or decreasing) and the number of extrema is encoded (e.g. In2).
+        /// </summary>
+        /// <param name="x">vector of x values</param>
+        /// <param name="a">vector of y values at the position of the x values</param>
+        /// <param name="c">vector of curvature (second derivative) at the position of the x values</param>
+        /// <returns>Condition, that encodes the parent shape configuration</returns>
         let getParentShape (x:Vector<float>) (a:Vector<float>) (c:Vector<float>) =
             let extrema = getExtrema x a c
             let extremaCount = extrema.Length
@@ -516,6 +525,7 @@ module TemporalClassification =
             | _ -> Complex
 
 
+        [<Obsolete("")>]
         //check the spline for the predefined condition
         let private checkshape (x:Vector<float>) (a:Vector<float>) (c:Vector<float>) (con:Condition)=
             let extrema = getExtrema x a c
@@ -534,6 +544,7 @@ module TemporalClassification =
             | De4       -> extremaCount = 4 && extrema.[0].Indicator = -1 && extrema.[1].Indicator = 1
             | Complex   -> true
 
+        [<Obsolete("")>]
         let private mapCondition (operator:Matrix<float> -> matrix) con =
             let mat = matrix [[1.]]
             match con with
@@ -544,7 +555,13 @@ module TemporalClassification =
             | x when con = 4 -> if mat = operator mat then Condition.De4 else Condition.In4
             | _ -> failwithf "con>5 not supported"
 
-        ///creates a weighting matrix out of the x-, and y-Values, the given weighting method and the number of measured replicates.
+        /// <summary>Generates a weighting matrix out of the x-, and y-Values, and 
+        /// the given weighting method.
+        /// </summary>
+        /// <param name="xVal">vector of x values</param>
+        /// <param name="yVal">collection of y value samples</param>
+        /// <param name="w_method">Method to determine the weighting (e.g. 1/var)</param>
+        /// <returns>Matrix with weights encoded in its diagonal</returns>
         let getWeighting (xVal:Vector<float>) (yVal: float [] []) (w_method:WeightingMethod) =
             match w_method with
             | Equal ->
@@ -668,7 +685,13 @@ module TemporalClassification =
                 for i = 0 to xVal.Length - 1 do Wtemp.[i,i] <- cvOfVec.[i] / cvAvg
                 Wtemp
                    
-        ///d: complexity (count of extrema)
+        /// <summary>Calculates the Akaike Information criterion from actual values to a prediction
+        /// </summary>
+        /// <param name="d">complexity measure(count of extrema)</param>
+        /// <param name="a">vector of predicted y values</param>
+        /// <param name="y">vector of actual y values</param>
+        /// <param name="W">Matrix with weightings encoded as diagonal</param>
+        /// <returns>Akaike Information Criterion corrected for small sample sizes.</returns>
         let getAIC d (a:Vector<float>) (y:Vector<float>) (W:Matrix<float>) =
             let sse =
                 let weightedResiduals =
@@ -677,10 +700,17 @@ module TemporalClassification =
                     pown (weightedResiduals |> Vector.norm) 2
                 nSSE
             let n = a.Length |> float
-            n * Math.Log(sse/n) + 2. * (float d) +  ((2. * float d * (float d + 1.))/(float n - d - 1.))
+            n * Math.Log(sse/n) + 2. * (float d) + ((2. * float d * (float d + 1.))/(float n - d - 1.))
 
-        ///calculates an unconstrained smoothing spline
-        let getInitialEstimate (D:Matrix<float>) (H:Matrix<float>) (W:Matrix<float>) n y xVal = 
+        /// <summary>calculates an smoothing spline with the given weighting without shape constraints</summary>
+        /// <param name="D">Matrix D as defined in Wood 1994</param>
+        /// <param name="H">Matrix H as defined in Wood 1994</param>
+        /// <param name="W">Matrix with weightings encoded as diagonal</param>
+        /// <param name="y">Vector of y value estimates</param>
+        /// <param name="xVal">Vector of x values</param>
+        /// <returns>Object for fitting the smoothing splines, together with quality measures.</returns>
+        let getInitialEstimate (D:Matrix<float>) (H:Matrix<float>) (W:Matrix<float>) y (xVal:Vector<float>) = 
+            let n = xVal.Length
             let I = Matrix.identity n
             let Z = Matrix.identity n
             let calcGLambda lambd = 
@@ -747,7 +777,11 @@ module TemporalClassification =
 
             TempClassResult.Create (Some xVal) None None None a_unconstrained c 0. GCV_unconstrained 0. (Array2D.zeroCreate 0 0) aic splineFunction None
         
-        ///calculates an unconstrained smoothing spline for a given weightingmatrix, x-, and y-Values
+        /// <summary>calculates an smoothing spline with the given weighting without shape constraints</summary>
+        /// <param name="W">Matrix with weightings encoded as diagonal</param>
+        /// <param name="y">Vector of y value estimates</param>
+        /// <param name="xVal">Vector of x values</param>
+        /// <returns>Object for fitting the smoothing splines, together with quality measures.</returns>
         let getInitialEstimateOfWeighting W (y:Vector<float>) (xVal:Vector<float>) =
             let n = y |> Seq.length
         
@@ -763,9 +797,12 @@ module TemporalClassification =
                 D.[i-1,i]   <- h.[i]/6.0
                 D.[i,i-1] <- h.[i]/6.0        
         
-            getInitialEstimate (Matrix.ofArray2D D) (Matrix.ofArray2D H) W n y xVal
+            getInitialEstimate (Matrix.ofArray2D D) (Matrix.ofArray2D H) W y xVal
 
-        ///calculates an unconstrained smoothing spline
+        /// <summary>calculates an unconstrained smoothing spline</summary>
+        /// <param name="xVal">Vector of x values</param>
+        /// <param name="yVal">Vector of y value estimates</param>
+        /// <returns>Object for fitting the smoothing splines, together with quality measures.</returns>
         let getUnconstrainedSpline (xVal:Vector<float>) (yVal:Vector<float>) =
             let W = Matrix.diag (Vector.oneCreate xVal.Length)
             let n = yVal |> Seq.length
@@ -782,10 +819,22 @@ module TemporalClassification =
                 D.[i-1,i]   <- h.[i]/6.0
                 D.[i,i-1] <- h.[i]/6.0        
     
-            getInitialEstimate (Matrix.ofArray2D D) (Matrix.ofArray2D H) W n yVal xVal
+            getInitialEstimate (Matrix.ofArray2D D) (Matrix.ofArray2D H) W yVal xVal
 
-        ///calculates the generalized cross validation(GCV), and the modified GCV for small sample sizes: (mGCV,GCV)
-        let getGCV (C:Matrix<float>) (D:Matrix<float>) (H:Matrix<float>) (W:Matrix<float>) (n:int) (y:vector) (a:vector) (lambda:float) =
+        
+        /// <summary>calculates the generalized cross validation(GCV), 
+        /// and the modified GCV for small sample sizes(mGCV)
+        /// </summary>
+        /// <param name="C">constraint matrix</param>
+        /// <param name="D">Matrix D as defined in Wood 1994</param>
+        /// <param name="H">Matrix H as defined in Wood 1994</param>
+        /// <param name="W">Matrix with weightings encoded as diagonal</param>
+        /// <param name="y">vector of actual y values</param>
+        /// <param name="a">vector of predicted y values</param>
+        /// <param name="lambda">regularization parameter lambda</param>
+        /// <returns>Tuple in the form of (mGCV,GCV)</returns>
+        let getGCV (C:Matrix<float>) (D:Matrix<float>) (H:Matrix<float>) (W:Matrix<float>) (y:vector) (a:vector) (lambda:float) =
+            let n = a.Length
             //identify inequality constraints where C*a<=[0]
             let constr = C * (a |> Matrix.ofVector) 
             let tol = 0.001 
@@ -860,8 +909,16 @@ module TemporalClassification =
             let variance = var_ny lambda
             (mGcv,gcv)
 
-        ///calculates a spline with the shape defined by the operator(increasing or decreasing) and the condition(0,1,2,or 3 extrema)
-        let private spline operator (x:Vector<float>) (y:Vector<float>) (W:Matrix<float>) con =
+        /// <summary>calculates a spline with the shape defined by the operator(increasing or decreasing) 
+        /// and the condition(0 - 4 extrema)</summary>
+        /// <param name="operator">id (~+) or negative transforming (~-)</param>
+        /// <param name="x">vector of x values</param>
+        /// <param name="y">vector of actual y values</param>
+        /// <param name="W">Matrix with weightings encoded as diagonal</param>
+        /// <param name="con">number of extrema that shall be enforced</param>
+        /// <returns>Tuple of constraint matrices, that fulfill the conditions (operator and con)
+        /// and the final spline solution that minimizes the mGCV.</returns>
+        let internal spline operator (x:Vector<float>) (y:Vector<float>) (W:Matrix<float>) con =
 
             /// Sets the diagonal to value inplace
             let setDiagonalInplace value (m:Matrix<_>) =
@@ -1184,7 +1241,7 @@ module TemporalClassification =
                         //        tmp' * a'                                                     //tested
                         //    Vector.init (tmp.Length+2) (fun i -> if i>0 && i<=tmp.Length then tmp.[i-1] else 0.0)
 
-                        let (mgcv,gcv) = getGCV (aMat |> Matrix.ofArray2D) (Matrix.ofArray2D D) (Matrix.ofArray2D H) W y.Length y a' lambd
+                        let (mgcv,gcv) = getGCV (aMat |> Matrix.ofArray2D) (Matrix.ofArray2D D) (Matrix.ofArray2D H) W y a' lambd
                         InnerResult.Create a' mgcv aMat e' gcv lambd
                         )
                 //minimize the gcv in respect to the used smoothing factor lambda
@@ -1254,7 +1311,13 @@ module TemporalClassification =
             //    let varfinal = varfin.[eminIndex]
             //    createTempClassResultSimple afinal cfinal efinal gcvfinal lambdafinal (A.[eminIndex]) varfinal
 
-        //calculate the constrained smoothing spline with given constraintmatrix and given lambda
+        /// <summary>calculate the constrained smoothing spline with given constraintmatrix and given lambda</summary>
+        /// <param name="ctemp">constraint matrix to enforce specific curve configuration (shape)</param>
+        /// <param name="x">vector of x values</param>
+        /// <param name="y">vector of actual y values</param>
+        /// <param name="W">Matrix with weightings encoded as diagonal</param>
+        /// <param name="lambd">spline smoothing strength</param>
+        /// <returns>spline solution that minimizes the mGCV</returns>
         let splineManual ctemp (x:Vector<float>) (y:Vector<float>) (W:Matrix<float>) lambd =
 
             /// Sets the diagonal to value inplace
@@ -1318,7 +1381,7 @@ module TemporalClassification =
                             let tmp' = Algebra.LinearAlgebra.SolveLinearSystems tmpD tmpH
                             tmp' * a'
                         Vector.init (tmp.Length+2) (fun i -> if i>0 && i<=tmp.Length then tmp.[i-1] else 0.0)
-                    let (mgcv,gcv) = getGCV (aMat |> Matrix.ofArray2D) (Matrix.ofArray2D D) (Matrix.ofArray2D H) W y.Length y a' lambd
+                    let (mgcv,gcv) = getGCV (aMat |> Matrix.ofArray2D) (Matrix.ofArray2D D) (Matrix.ofArray2D H) W y a' lambd
                     a',e',mgcv,c' 
                             )
                 |> Aux.unzip4
@@ -1349,16 +1412,31 @@ module TemporalClassification =
                 let splineFunction = initEvalAt x afinal cfinal
                 TempClassResult.Create (Some x) None None None  afinal cfinal gcvfinal efinal lambdafinal ctemp infinity splineFunction None
 
-        ///calculates a constrained initially increasing spline with given y-,and y-Values, a weighting matrix and the number of allowed extrema
+        /// <summary>calculates a constrained, initially increasing spline</summary>
+        /// <param name="x">vector of x values</param>
+        /// <param name="y">vector of actual y values</param>
+        /// <param name="W">Matrix with weightings encoded as diagonal</param>
+        /// <param name="con">number of extrema to be enforced in the spline</param>
+        /// <returns>spline solution that optimizes the smoothing strength lambda by minimizing mGCV</returns>
         let splineIncreasing (x:Vector<float>) (y:Vector<float>) (W:Matrix<float>) con = 
             spline (~-) x y W con
         
-        ///calculates a constrained initially decreasing spline with given y-,and y-Values, a weighting matrix and the number of allowed extrema
+        /// <summary>calculates a constrained, initially decreasing spline</summary>
+        /// <param name="x">vector of x values</param>
+        /// <param name="y">vector of actual y values</param>
+        /// <param name="W">Matrix with weightings encoded as diagonal</param>
+        /// <param name="con">number of extrema to be enforced in the spline</param>
+        /// <returns>spline solution that optimizes the smoothing strength lambda by minimizing mGCV</returns>
         let splineDecreasing (x:Vector<float>) (y:Vector<float>) (W:Matrix<float>) con = 
             spline (~+) x y W con
 
-
-        ///returns the best fit of the observation x,-and y-values and a given weightingMatrix
+        /// <summary>Returns the best fit, selected from 0 - 4 present extrema</summary>
+        /// <param name="x_values">vector of x values</param>
+        /// <param name="y_values">vector of actual y values</param>
+        /// <param name="wMat">Matrix with weightings encoded as diagonal</param>
+        /// <param name="minimizer">either Minimizer.AICc or Minimizer.GCV</param>
+        /// <returns>spline solution that optimizes the smoothing strength lambda by minimizing mGCV
+        /// and optimizes the curve configuration (shape) by minimizing the defined minimizer.</returns>
         let getBestFitOfWeighting x_values y_values wMat minimizer = 
             let getinitialestimate = getInitialEstimateOfWeighting wMat (vector y_values) x_values
             //monotone splines
@@ -1462,14 +1540,27 @@ module TemporalClassification =
         solve system by substitution and you get the coefficients for this interval
         *)
 
-        ///gets the observation values (x,y), the number of measured replicates and the weightingmethod and returns the spline result of the best fit
+        /// <summary>Takes raw data, weighting, and minimizer and returns the best fit, selected from 0 - 4 present extrema</summary>
+        /// <param name="xVal">vector of x values</param>
+        /// <param name="yVal">vector of actual y value samples</param>
+        /// <param name="weightingMethod">y value weighting method (e.g. 1/var)</param>
+        /// <param name="minimizer">either Minimizer.AICc or Minimizer.GCV</param>
+        /// <returns>spline solution that optimizes the smoothing strength lambda by minimizing mGCV
+        /// and optimizes the curve configuration (shape) by minimizing the defined minimizer.</returns>
         let getBestFit xVal (yVal: float [][]) weightingMethod minimizer = 
             let yValMeans = yVal |> Seq.map Seq.mean |> vector
             let weightingMatrix = (getWeighting xVal yVal weightingMethod)
             let (cl,fit,models) = getBestFitOfWeighting xVal yValMeans weightingMatrix minimizer
             {fit with XValues = Some xVal;YValues = Some yVal;WeightingMethod = Some weightingMethod;Minimizer = Some minimizer},models
 
-        ///gets the observation values (x,y), and the replicates standard deviation and weightingmethod and returns the spline result of the best fit
+        /// <summary>Takes raw data, weighting, and minimizer and returns the best fit, selected from 0 - 4 present extrema</summary>
+        /// <param name="xVal">vector of x values</param>
+        /// <param name="yVal">vector of actual y values</param>
+        /// <param name="stdVal">vector of y value standard deviations</param>
+        /// <param name="weightingMethod">y value weighting method (e.g. 1/var)</param>
+        /// <param name="minimizer">either Minimizer.AICc or Minimizer.GCV</param>
+        /// <returns>spline solution that optimizes the smoothing strength lambda by minimizing mGCV
+        /// and optimizes the curve configuration (shape) by minimizing the defined minimizer.</returns>
         let getBestFitOfStd (xVal:Vector<float>) (yVal:Vector<float>) (stdVal:Vector<float>) weightingMethod minimizer= 
             let weightingMatrix = 
                 //(getWeighting xVal (yVal |> vector) weightingMethod repNumber)
@@ -1502,7 +1593,12 @@ module TemporalClassification =
                 idx
             idx 
 
-        ///geturns a function, that gives the corresponding spline function and approximates the areas outside of x by linear interpolation of the border knots and their fst derivative
+        /// <summary>Takes spline data and returns prediciton function, that predicts with the last known 
+        /// slope and curvature of 0 in ranges outside the x value coverage</summary>
+        /// <param name="x">vector of x values</param>
+        /// <param name="a">vector of predicted y values</param>
+        /// <param name="c">vector of predicted curvature at positions of x</param>
+        /// <returns>prediction function that takes x and returns y_pred</returns>
         let initEvalAtWithLinearInterpol (x:Vector<float>) (a:Vector<float>) (c:Vector<float>) =
             let splineFunction  = initEvalAt x a c
             let splineFunction' = initEvalFstDerivativeAt x a c
@@ -1523,10 +1619,23 @@ module TemporalClassification =
                     | idx when idx > (x.InternalValues.Length-2) -> 
                         linearInterPolUpperBorder t
                     | idx -> initEvalAt x a c t 
-                )    
-
+                )   
+                
+    /// <summary>Module to identify classes based on curve configuration</summary>
     module Classification =
 
+        /// <summary>Takes spline data and returns prediciton function, that predicts with the last known 
+        /// slope and curvature of 0 in ranges outside the x value coverage</summary>
+        /// <param name="xValues">vector of x values</param>
+        /// <param name="traceA">vector of predicted y values</param>
+        /// <param name="traceC">vector of predicted curvature at positions of x</param>
+        /// <param name="linearThreshold">if the range of the predicted values at the knots is lower than this
+        /// value, the curge is expected to be constant.</param>
+        /// <param name="sensitivity">
+        /// if no extrema exist, the classification is based on curvature properties. 
+        /// 1: all curvature changes are interpreted for classification
+        /// </param>
+        /// <returns>Classification string in the form of e.g. Max2.00,Min3.00,Max5.00</returns>
         let getClassification xValues traceA traceC linearThreshold sensitivity = 
             let extrema = Fitting.getExtrema xValues traceA traceC
         
@@ -1675,11 +1784,15 @@ module TemporalClassification =
                     |> List.map (fun ex -> {ex with Xvalue = Aux.roundToNext ex.Xvalue xValues})
                     |> Fitting.extremaToString
                
-               
+    /// <summary>Module to visually inspect the fitting and classification result</summary>
     module Vis =
 
         open Plotly.NET
 
+        /// <summary>Takes a spline and returns a visualization of the spline and quality parameters</summary>
+        /// <param name="tc">Fitting result</param>
+        /// <param name="modelQualityScores">collection of minimizer values (e.g. ["In0",12.;"In1",2.])</param>
+        /// <returns>Plotly chart that summarizes the fit properties</returns>
         let getChart (tc: Fitting.TempClassResult) (modelQualityScores: ((string*float)[]) option) = 
             let min,max =
                 Seq.min tc.XValues.Value,
